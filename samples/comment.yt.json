@@ -1,0 +1,23 @@
+{
+  "envelope": {
+    "event_id": "evt-yt-comment-0001", "platform": "yt", "kind": "comment",
+    "id": "yt:comment:UgzFAKE00000000000001.FAKEreply01", "native_id": "UgzFAKE00000000000001.FAKEreply01",
+    "observed_at": "2026-11-06T09:00:00Z", "version": "1794042000000000",
+    "provenance": {"collector": "yts", "collector_version": "1.0.0", "parser_version": "4",
+      "source_operation": "next", "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT", "mode": "CRAWL_MODE_INCREMENTAL"}
+  },
+  "post_id": "yt:post:fakeVid0001",
+  "account_id": "yt:account:UCfake0000000000000001",
+  "parent_comment_id": "yt:comment:UgzFAKE00000000000001",
+  "root_comment_id": "yt:comment:UgzFAKE00000000000001",
+  "depth": 1,
+  "author": {
+    "account": {"id": "yt:account:UCfakeAuthor000000000001", "handle": "@fake_user_1", "type": "ACCOUNT_TYPE_CHANNEL"},
+    "badges": [{"kind": "member", "detail": "Member (2 years)"}]
+  },
+  "text": {"text": "@fake_user_2 example reply text"},
+  "published_at": {"at": "2026-11-03T09:00:00Z", "precision": "TIME_PRECISION_DAY", "displayed": "3 days ago"},
+  "flags": {"by_post_owner": false, "pinned": false, "liked_by_creator": true, "edited": false},
+  "counts": {"likes": {"value": "15", "exactness": "COUNT_EXACTNESS_EXACT"}},
+  "status": {"availability": "AVAILABILITY_VISIBLE"}
+}

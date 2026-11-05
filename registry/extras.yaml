@@ -1,0 +1,36 @@
+# Documented extras keys: platform-only fields with no shared field yet.
+# A key used by two or more platforms is promoted to a real field in a
+# minor release. Keys are "<platform>.<name>".
+extras:
+  fb:
+    - {key: fb.story_id, on: post, meaning: "GraphQL story ID, to re-read"}
+    - {key: fb.feedback_id, on: [post, comment], meaning: "GraphQL feedback ID, to read comments"}
+    - {key: fb.graph_id, on: comment, meaning: "GraphQL comment ID"}
+    - {key: fb.requested_ref, on: account, meaning: "what the client registered (v:vanity, id:n, URL)"}
+    - {key: fb.dash_manifest_url, on: media, meaning: "video manifest URL (expires)"}
+  ig:
+    - {key: ig.shortcode, on: post, meaning: "the post's code in its URL"}
+    - {key: ig.product_type, on: post, meaning: "feed, clips, carousel_container, igtv"}
+    - {key: ig.media_type, on: post, meaning: "1 photo, 2 video, 8 carousel"}
+    - {key: ig.usertag_positions, on: post, meaning: "x, y and carousel child of each tag"}
+    - {key: ig.discovered_via, on: post, meaning: "grid, reels"}
+    - {key: ig.pronouns, on: account, meaning: "pronouns as shown"}
+    - {key: ig.highlight_count, on: account, meaning: "number of highlights"}
+    - {key: ig.requested_ref, on: account, meaning: "u:username or id:pk"}
+  tt:
+    - {key: tt.bio_link_risk, on: account, meaning: "TikTok's risk value for the bio link"}
+    - {key: tt.following_visibility, on: account, meaning: "1 shown, 2 hidden"}
+    - {key: tt.category_code, on: post, meaning: "TikTok CategoryType"}
+    - {key: tt.aigc_label_type, on: post, meaning: "AI label type code"}
+    - {key: tt.anchors, on: post, meaning: "product, place and effect anchors, raw"}
+    - {key: tt.status_code, on: post, meaning: "the post page's statusCode when unavailable"}
+    - {key: tt.discovered_via, on: post, meaning: "list, or others reserved"}
+    - {key: tt.stick_position, on: comment, meaning: "pin position"}
+    - {key: tt.comment_labels, on: comment, meaning: "label_list texts"}
+    - {key: tt.predicted_age_group, on: comment, meaning: "TikTok's inferred age band of the author (owner decision 1 Nov; normal data, D-003)"}
+  yt:
+    - {key: yt.live_status_raw, on: post, meaning: "none, upcoming, live, was_live as read"}
+    - {key: yt.player_unavailable, on: post, meaning: "tags and category couldn't be read"}
+    - {key: yt.playability_status, on: post, meaning: "the player's status (login required, unplayable)"}
+    - {key: yt.source, on: post, meaning: "how yts first saw it: web, tab, rss, websub, web_search, api_search"}
+    - {key: yt.member_badge, on: comment, meaning: "channel membership badge as shown"}

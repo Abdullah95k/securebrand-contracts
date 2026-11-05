@@ -1,0 +1,202 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Post is anything an account publishes at the top level: a post, photo,
+// album, video, reel, Short, TikTok, story, live stream, community post or
+// channel message (topic content.post.v1, key: the post ID). A new version
+// when content changes; counts alone go to content.metrics.v1.
+message Post {
+  Envelope envelope = 1;
+  // The account it belongs to.
+  string account_id = 2;
+  PostType type = 3;
+  // The platform's own subtype: photo, album, carousel, reel, short, link,
+  // share, event, highlight, premiere...
+  string subtype = 4;
+  string url = 5;
+  Time published_at = 6;
+  Text title = 7;
+  Text text = 8;
+  Text description = 9;
+  // Hashtags, without "#".
+  repeated string hashtags = 10;
+  // The uploader's own tags (YouTube), not hashtags.
+  repeated string uploader_tags = 11;
+  // Accounts mentioned in the text (positions are in text.spans).
+  repeated AccountRef mentions = 12;
+  // Accounts tagged in the media.
+  repeated AccountRef tagged = 13;
+  // Co-authors and collaborators.
+  repeated AccountRef coauthors = 14;
+  // Link attachments and links in the text.
+  repeated Link links = 15;
+  Location location = 16;
+  // ISO country the post was made in, when the platform says (TikTok
+  // locationCreated): a strong relevance signal.
+  string created_in_country = 17;
+  // The post this one shares, quotes, duets or stitches.
+  Reshare reshare = 18;
+  AudioRef audio = 19;
+  VideoInfo video = 20;
+  // The post's media, in order.
+  repeated MediaRef media = 21;
+  ContentLabels labels = 22;
+  PostFlags flags = 23;
+  // The platform's category (YouTube category name, TikTok category code).
+  string category = 24;
+  // Topics the platform attaches (Instagram related topics).
+  repeated string platform_topics = 25;
+  // Playlists, highlights or series it belongs to.
+  repeated PlaylistRef playlists = 26;
+  Poll poll = 27;
+  // The counts read with this observation, if any.
+  Engagement counts = 28;
+  Status status = 29;
+  Relevance relevance = 30;
+  ItemCoverage coverage = 31;
+  // Captions or subtitles the platform provides, when collected.
+  repeated CaptionTrack captions = 32;
+  google.protobuf.Struct extras = 99;
+}
+
+enum PostType {
+  POST_TYPE_UNSPECIFIED = 0;
+  // Text, photo, album, link or share.
+  POST_TYPE_POST = 1;
+  POST_TYPE_VIDEO = 2;
+  // Reels, Shorts, TikTok videos.
+  POST_TYPE_SHORT_VIDEO = 3;
+  POST_TYPE_STORY = 4;
+  POST_TYPE_LIVE = 5;
+  // YouTube community posts.
+  POST_TYPE_COMMUNITY = 6;
+  // Messages in a broadcast channel (reserved: Telegram).
+  POST_TYPE_CHANNEL_MESSAGE = 7;
+  POST_TYPE_ARTICLE = 8;
+}
+
+message Reshare {
+  ReshareType type = 1;
+  string post_id = 2;
+  string post_url = 3;
+  AccountRef owner = 4;
+}
+
+enum ReshareType {
+  RESHARE_TYPE_UNSPECIFIED = 0;
+  RESHARE_TYPE_SHARE = 1;
+  RESHARE_TYPE_QUOTE = 2;
+  RESHARE_TYPE_REPOST = 3;
+  RESHARE_TYPE_DUET = 4;
+  RESHARE_TYPE_STITCH = 5;
+  RESHARE_TYPE_CROSSPOST = 6;
+}
+
+message AudioRef {
+  // "<platform>:audio:<native id>", when the audio has an ID.
+  string audio_id = 1;
+  string title = 2;
+  string artist = 3;
+  // The post's own sound, not a licensed track.
+  optional bool original = 4;
+}
+
+message VideoInfo {
+  optional int64 duration_ms = 1;
+  LiveStatus live_status = 2;
+  // Upcoming streams and premieres.
+  Time scheduled_start = 3;
+  repeated Chapter chapters = 4;
+  // Caption languages the platform lists.
+  repeated string caption_languages = 5;
+  optional bool has_audio = 6;
+  optional int32 width = 7;
+  optional int32 height = 8;
+}
+
+enum LiveStatus {
+  LIVE_STATUS_UNSPECIFIED = 0;
+  LIVE_STATUS_NONE = 1;
+  LIVE_STATUS_UPCOMING = 2;
+  LIVE_STATUS_LIVE = 3;
+  LIVE_STATUS_ENDED = 4;
+}
+
+message Chapter {
+  string title = 1;
+  int64 start_ms = 2;
+}
+
+message ContentLabels {
+  optional bool ai_generated = 1;
+  string ai_label_text = 2;
+  optional bool paid_partnership = 3;
+  optional bool ad = 4;
+  optional bool age_restricted = 5;
+  optional bool members_only = 6;
+  optional bool family_safe = 7;
+  // Warning labels the platform shows.
+  repeated string warnings = 8;
+}
+
+message PostFlags {
+  optional bool pinned = 1;
+  optional bool comments_disabled = 2;
+  optional bool edited = 3;
+  Time edited_at = 4;
+}
+
+message PlaylistRef {
+  string playlist_id = 1;
+  int32 position = 2;
+}
+
+message Poll {
+  string question = 1;
+  repeated PollOption options = 2;
+}
+
+message PollOption {
+  string text = 1;
+  Count votes = 2;
+}
+
+message CaptionTrack {
+  string language = 1;
+  // The platform generated it automatically.
+  bool auto_generated = 2;
+  string text = 3;
+}
+
+// ItemCoverage says how completely an item's comments were collected, and
+// why something is missing. Clients see it per post.
+message ItemCoverage {
+  CommentsState comments_state = 1;
+  optional int64 comments_collected = 2;
+  // The comment count the platform reports.
+  optional int64 comments_reported = 3;
+  // Collected divided by reported.
+  optional double completeness = 4;
+  optional int64 replies_collected = 5;
+  // False where the platform serves no replies logged out (Instagram).
+  optional bool replies_available = 6;
+  string reason = 7;
+  Time synced_at = 8;
+}
+
+enum CommentsState {
+  COMMENTS_STATE_UNSPECIFIED = 0;
+  COMMENTS_STATE_COMPLETE = 1;
+  // Stopped at a cap or yield.
+  COMMENTS_STATE_PARTIAL = 2;
+  // Stopped by a wall or an error.
+  COMMENTS_STATE_TRUNCATED = 3;
+  COMMENTS_STATE_NOT_READ = 4;
+  COMMENTS_STATE_DISABLED = 5;
+}

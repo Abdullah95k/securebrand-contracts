@@ -1,0 +1,25 @@
+# Topics of the unified contract. Messages are plain protobuf, one message
+# type per topic, with headers "sb-type" (the full message name) and
+# "sb-contract" (the contract version). The platform registers each topic's
+# "<topic>-value" subject in the Schema Registry, BACKWARD_TRANSITIVE, from
+# the contract repository's CI; collectors don't register shared subjects.
+# Retention: 7 days on Kafka. The permanent copy is ClickHouse plus the event
+# archive in object storage (owner D-004).
+topics:
+  - {topic: content.account.v1,          type: securebrand.content.v1.Account,          key: account id}
+  - {topic: content.account_snapshot.v1, type: securebrand.content.v1.AccountSnapshot,  key: account id}
+  - {topic: content.post.v1,             type: securebrand.content.v1.Post,             key: post id}
+  - {topic: content.comment.v1,          type: securebrand.content.v1.Comment,          key: post id}
+  - {topic: content.metrics.v1,          type: securebrand.content.v1.Metrics,          key: post id (a comment's post)}
+  - {topic: content.media.v1,            type: securebrand.content.v1.Media,            key: media id}
+  - {topic: content.audio.v1,            type: securebrand.content.v1.Audio,            key: audio id}
+  - {topic: content.playlist.v1,         type: securebrand.content.v1.Playlist,         key: playlist id}
+  - {topic: content.live_chat.v1,        type: securebrand.content.v1.LiveChatMessage,  key: live post id, status: reserved}
+  - {topic: content.transcript.v1,       type: securebrand.content.v1.Transcript,       key: post id, status: reserved}
+  - {topic: content.media.ready.v1,      type: securebrand.media.v1.MediaReady,         key: media id}
+  - {topic: content.media.processed.v1,  type: securebrand.media.v1.MediaProcessed,     key: media id}
+  - {topic: content.media.deleted.v1,    type: securebrand.media.v1.MediaDeleted,       key: media id}
+  - {topic: discovery.candidate.v1,      type: securebrand.discovery.v1.Candidate,      key: "target platform + account reference"}
+  - {topic: collection.coverage.v1,      type: securebrand.coverage.v1.JobCoverage,     key: job id}
+  - {topic: registry.account_request.v1, type: securebrand.registry.v1.AccountRequest,  key: "platform + account reference"}
+  - {topic: lifecycle.erasure.v1,        type: securebrand.lifecycle.v1.Erasure,        key: subject id, status: dormant}

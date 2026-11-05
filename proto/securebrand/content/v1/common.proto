@@ -1,0 +1,363 @@
+syntax = "proto3";
+
+// securebrand.content.v1: the unified content contract (draft v0.1).
+//
+// Every collector maps its platform data into these messages, and every
+// consumer (storage, analysis, alerts, the client app) reads only these.
+// Rules (README.md):
+//   - Fields are only ever added. Nothing is renamed, renumbered or removed.
+//   - Absent means unknown, never zero or false: optional scalars and
+//     message-typed counts carry presence.
+//   - Text is kept exactly as received (UTF-8, NFC). Consumers compute any
+//     normalized form for matching.
+//   - Times are UTC, each with its precision.
+//   - IDs are text: "<platform>:<kind>:<native id>". The kind is the entity
+//     kind (account, post, comment, media, audio, collection), never a
+//     subtype, so re-classifying a reel or a reply never changes an ID.
+//   - Platform codes come from registry/platforms.yaml. Adding a
+//     platform adds a code there and a mapping; no message changes.
+//   - Platform-only fields go in `extras`, under keys "<platform>.<name>"
+//     documented in registry/extras.yaml. A field present on two
+//     or more platforms is promoted to a real field in a minor release.
+package securebrand.content.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Envelope is on every content event.
+message Envelope {
+  // Unique per observation, and the same if the same observation is
+  // delivered twice. Recommended: a UUIDv5 or SHA-256 of
+  // "<id>|<observed_at µs>|<content_hash>". Consumers ignore repeats.
+  string event_id = 1;
+  // Platform code from the registry: fb, ig, tt, yt (reserved: x, tg, th,
+  // li, sc and others as they are added).
+  string platform = 2;
+  // The message kind: account, account_snapshot, post, comment, metrics,
+  // media, audio, collection, live_chat_message, transcript.
+  string kind = 3;
+  // The entity this event is about, "<platform>:<entity kind>:<native id>".
+  // For a snapshot it is the account's ID; for metrics, the target's ID.
+  string id = 4;
+  // The platform's own ID of that entity, as text.
+  string native_id = 5;
+  // When the collector saw it.
+  google.protobuf.Timestamp observed_at = 6;
+  // Grows with every change of this entity; the highest wins. Collectors
+  // set it to observed_at in microseconds of the observation that produced
+  // this content. It needs no state and orders correctly across pods.
+  int64 version = 7;
+  // Hex SHA-256 of the content fields (not counts, not bookkeeping). The
+  // same hash means no change in content.
+  string content_hash = 8;
+  // True when only the fields that are set are known, and unset fields mean
+  // "unchanged", never "empty". A deletion is a partial event carrying the
+  // keys and the status. Consumers never blank stored content from one.
+  bool partial = 9;
+  Provenance provenance = 10;
+}
+
+// Provenance says who produced a record, how, and from what.
+message Provenance {
+  // fbs, igs, tks, yts, or another registered collector.
+  string collector = 1;
+  string collector_version = 2;
+  // The parser's version, so a parser fix can be re-applied to old raw data.
+  string parser_version = 3;
+  // The platform operation that returned the data (a GraphQL query name, an
+  // endpoint such as "browse" or "comment_list"), and its variant (a doc_id,
+  // or a label such as "web-signed").
+  string source_operation = 4;
+  string source_variant = 5;
+  // Every collection job this observation belongs to.
+  repeated string job_ids = 6;
+  Acquisition acquisition = 7;
+  CrawlMode mode = 8;
+  // Where the raw response is kept ("s3://bucket/key#line"), if it is.
+  string raw_ref = 9;
+  // ISO 3166-1 alpha-2 country of the exit that read it. Platforms serve
+  // different data by country.
+  string exit_country = 10;
+  // Set when the source's terms require deletion or refresh by a date (for
+  // example official YouTube Data API data: 30 days). Storage applies it.
+  google.protobuf.Timestamp terms_expire_at = 11;
+}
+
+enum Acquisition {
+  ACQUISITION_UNSPECIFIED = 0;
+  // Read from the platform's public pages or web calls, logged out.
+  ACQUISITION_SCRAPED_LOGGED_OUT = 1;
+  // From a platform's official API, under its terms.
+  ACQUISITION_OFFICIAL_API = 2;
+  // Supplied by a client or the owner.
+  ACQUISITION_CLIENT_PROVIDED = 3;
+  // A bulk import of earlier data.
+  ACQUISITION_IMPORT = 4;
+  // Worked out by a SecureBrand service from other records.
+  ACQUISITION_DERIVED = 5;
+}
+
+enum CrawlMode {
+  CRAWL_MODE_UNSPECIFIED = 0;
+  CRAWL_MODE_FULL = 1;
+  CRAWL_MODE_INCREMENTAL = 2;
+  CRAWL_MODE_REFRESH = 3;
+  CRAWL_MODE_RECRAWL = 4;
+  CRAWL_MODE_BACKFILL = 5;
+  // A re-parse of a kept raw response by a newer parser.
+  CRAWL_MODE_REPARSE = 6;
+}
+
+// Time is a moment with its precision. Platforms often show only "3 days
+// ago"; the estimate is kept with how precise it is, and a later, more
+// precise reading replaces it.
+message Time {
+  google.protobuf.Timestamp at = 1;
+  TimePrecision precision = 2;
+  // As the platform showed it, when it was relative or approximate.
+  string displayed = 3;
+}
+
+enum TimePrecision {
+  TIME_PRECISION_UNSPECIFIED = 0;
+  TIME_PRECISION_EXACT = 1;
+  TIME_PRECISION_MINUTE = 2;
+  TIME_PRECISION_HOUR = 3;
+  TIME_PRECISION_DAY = 4;
+  TIME_PRECISION_WEEK = 5;
+  TIME_PRECISION_MONTH = 6;
+  TIME_PRECISION_YEAR = 7;
+}
+
+// Count is one number as the platform showed it. An unset Count means
+// unknown or not shown; it is never written as zero.
+message Count {
+  // The value, or the lower bound when rounded ("1.2K" → 1200). Unset when
+  // hidden.
+  optional int64 value = 1;
+  CountExactness exactness = 2;
+  // As shown ("1.2K", "1,2 ألف"), when it was abbreviated or text.
+  string displayed = 3;
+  // The owner hid it (Instagram likes, YouTube subscribers). Value unset.
+  bool hidden = 4;
+}
+
+enum CountExactness {
+  COUNT_EXACTNESS_UNSPECIFIED = 0;
+  COUNT_EXACTNESS_EXACT = 1;
+  // Rounded or abbreviated by the platform; value is the lower bound.
+  COUNT_EXACTNESS_ROUNDED = 2;
+  // At least this many (a capped or partial reading).
+  COUNT_EXACTNESS_LOWER_BOUND = 3;
+}
+
+// Engagement is every count a post, comment or live stream can have.
+message Engagement {
+  Count views = 1;
+  Count likes = 2;
+  Count comments = 3;
+  Count replies = 4;
+  Count shares = 5;
+  Count saves = 6;
+  Count reposts = 7;
+  Count quotes = 8;
+  // Reactions by type (Facebook: like, love, haha, wow, sad, angry, care).
+  map<string, Count> reactions = 9;
+  // Whether the by-type reactions add up to the platform's total.
+  optional bool reactions_complete = 10;
+  // Live streams: viewers at the moment of observation.
+  Count concurrent_viewers = 11;
+  // Poll votes, downloads and other counts with no field yet, by name.
+  map<string, Count> other = 12;
+}
+
+// Text is a piece of text exactly as received, with what the platform said
+// about it.
+message Text {
+  string text = 1;
+  // BCP 47 language as the platform states or detects it. Empty when it
+  // gives none, or says undetermined (TikTok "un").
+  string platform_language = 2;
+  // Mentions, hashtags and links inside the text, with positions.
+  repeated TextSpan spans = 3;
+  // The platform served a shortened version ("see more").
+  bool truncated = 4;
+}
+
+message TextSpan {
+  SpanType type = 1;
+  int32 offset = 2;
+  int32 length = 3;
+  // How offset and length are counted. Facebook and TikTok count UTF-16
+  // units; consumers convert.
+  OffsetUnit unit = 4;
+  // The hashtag (without #), the URL, or the handle.
+  string value = 5;
+  // For a mention: the account, as far as the platform identifies it.
+  AccountRef account = 6;
+}
+
+enum SpanType {
+  SPAN_TYPE_UNSPECIFIED = 0;
+  SPAN_TYPE_MENTION = 1;
+  SPAN_TYPE_HASHTAG = 2;
+  SPAN_TYPE_LINK = 3;
+  SPAN_TYPE_CASHTAG = 4;
+}
+
+enum OffsetUnit {
+  OFFSET_UNIT_UNSPECIFIED = 0;
+  OFFSET_UNIT_UTF16 = 1;
+  OFFSET_UNIT_CODE_POINT = 2;
+  OFFSET_UNIT_BYTE = 3;
+}
+
+// AccountRef points at an account, resolved or not. Every author, mention,
+// tag, co-author and share owner is an AccountRef, so people and brands can
+// be linked across platforms.
+message AccountRef {
+  // "<platform>:account:<native id>" when the native ID is known.
+  string id = 1;
+  // The platform it is on, when it differs from the record's (a link from a
+  // YouTube About panel to an Instagram account).
+  string platform = 2;
+  string native_id = 3;
+  // Other IDs the platform uses for the same account (TikTok "sec_uid").
+  map<string, string> alt_ids = 4;
+  // Handle, vanity or username at the time.
+  string handle = 5;
+  string display_name = 6;
+  string url = 7;
+  AccountType type = 8;
+  optional bool verified = 9;
+  string picture_url = 10;
+}
+
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  // A Facebook page, or another account the platform marks as a page.
+  ACCOUNT_TYPE_PAGE = 1;
+  // A person's profile.
+  ACCOUNT_TYPE_PERSON = 2;
+  // A YouTube channel, or a broadcast channel elsewhere.
+  ACCOUNT_TYPE_CHANNEL = 3;
+  // A business, creator or organization account.
+  ACCOUNT_TYPE_ORGANIZATION = 4;
+  ACCOUNT_TYPE_GROUP = 5;
+}
+
+// Link is a URL with what is known about it.
+message Link {
+  string url = 1;
+  string title = 2;
+  // As the platform displayed it (host and path).
+  string display_url = 3;
+  // The registrable domain ("example.iq").
+  string domain = 4;
+  // When it points at a known platform: its code, and the account or content
+  // ID there (a linked Facebook page's ID, an Instagram username).
+  string target_platform = 5;
+  string target_id = 6;
+  LinkSource source = 7;
+  string description = 8;
+  string image_url = 9;
+}
+
+enum LinkSource {
+  LINK_SOURCE_UNSPECIFIED = 0;
+  LINK_SOURCE_WEBSITE_FIELD = 1;
+  LINK_SOURCE_BIO = 2;
+  LINK_SOURCE_ABOUT_PANEL = 3;
+  // An account the platform itself links (Instagram's linked Facebook page).
+  LINK_SOURCE_LINKED_ACCOUNT = 4;
+  LINK_SOURCE_TEXT = 5;
+  LINK_SOURCE_ATTACHMENT = 6;
+  LINK_SOURCE_DESCRIPTION = 7;
+}
+
+message Location {
+  string name = 1;
+  string platform_location_id = 2;
+  optional double latitude = 3;
+  optional double longitude = 4;
+  // ISO 3166-1 alpha-2.
+  string country_code = 5;
+  string city = 6;
+  string address = 7;
+}
+
+// Status is whether an entity can be seen, and why not.
+message Status {
+  Availability availability = 1;
+  // The platform's reason or code ("10204", "login_wall", "age_restricted").
+  string reason = 2;
+  // When it was first seen in this state.
+  google.protobuf.Timestamp since = 3;
+}
+
+enum Availability {
+  AVAILABILITY_UNSPECIFIED = 0;
+  AVAILABILITY_VISIBLE = 1;
+  // Can't be read now; the platform doesn't say why.
+  AVAILABILITY_UNAVAILABLE = 2;
+  AVAILABILITY_PRIVATE = 3;
+  // Shown only to logged-in viewers (by age, country or login wall).
+  AVAILABILITY_RESTRICTED = 4;
+  // Gone, as far as a logged-out reader can tell. The text is kept.
+  AVAILABILITY_DELETED = 5;
+  AVAILABILITY_BANNED = 6;
+}
+
+// Relevance says why an item or account was collected, and how sure.
+message Relevance {
+  optional bool relevant = 1;
+  // IDs from the shared keyword list.
+  repeated string matched_keyword_ids = 2;
+  // Rules such as "lang-ckb", "place-baghdad", "phone-964", "region-IQ".
+  repeated string matched_rules = 3;
+  // A score from the collector's or discovery's Iraq check, if any.
+  optional double score = 4;
+}
+
+// MediaRef points at a Media record from the item that holds it.
+message MediaRef {
+  string media_id = 1;
+  MediaType type = 2;
+  MediaRole role = 3;
+  int32 position = 4;
+}
+
+enum MediaType {
+  MEDIA_TYPE_UNSPECIFIED = 0;
+  MEDIA_TYPE_IMAGE = 1;
+  MEDIA_TYPE_VIDEO = 2;
+  MEDIA_TYPE_AUDIO = 3;
+  MEDIA_TYPE_GIF = 4;
+  MEDIA_TYPE_STICKER = 5;
+  MEDIA_TYPE_DOCUMENT = 6;
+}
+
+enum MediaRole {
+  MEDIA_ROLE_UNSPECIFIED = 0;
+  // The content itself: a photo, a carousel child, the video.
+  MEDIA_ROLE_CONTENT = 1;
+  MEDIA_ROLE_THUMBNAIL = 2;
+  MEDIA_ROLE_COVER = 3;
+  MEDIA_ROLE_PROFILE_PICTURE = 4;
+  MEDIA_ROLE_BANNER = 5;
+  // Attached to a comment or message.
+  MEDIA_ROLE_ATTACHMENT = 6;
+  MEDIA_ROLE_AUDIO_COVER = 7;
+}
+
+// CollectionScope says how much of an account is collected.
+enum CollectionScope {
+  COLLECTION_SCOPE_UNSPECIFIED = 0;
+  // Everything the account publishes.
+  COLLECTION_SCOPE_FULL = 1;
+  // Only items that match the relevance rules (yts "mention" channels).
+  COLLECTION_SCOPE_RELEVANT_ONLY = 2;
+  // The profile only (private accounts: the second list).
+  COLLECTION_SCOPE_PROFILE_ONLY = 3;
+}

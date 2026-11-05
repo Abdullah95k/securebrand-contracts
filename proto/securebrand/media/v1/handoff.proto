@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+// securebrand.media.v1: the hand-off of downloaded media files to analysis,
+// and their deletion once every required consumer is done (owner R5). It
+// replaces fb.media.ready/processed/deleted and the common.v1 copies in igs
+// and tks, which disagree on field numbers.
+package securebrand.media.v1;
+
+import "google/protobuf/timestamp.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/media/v1;mediav1";
+
+// MediaReady announces a downloaded file (topic content.media.ready.v1, key:
+// the media ID).
+message MediaReady {
+  string event_id = 1;
+  string platform = 2;
+  // The content.media.v1 record's ID.
+  string media_id = 3;
+  // The post, comment, account or audio it belongs to, and that item's
+  // account.
+  string owner_id = 4;
+  string owner_kind = 5;
+  string account_id = 6;
+  securebrand.content.v1.MediaType type = 7;
+  securebrand.content.v1.MediaRole role = 8;
+  string variant = 9;
+  StorageObject object = 10;
+  optional int32 width = 11;
+  optional int32 height = 12;
+  optional int64 duration_ms = 13;
+  string alt_text = 14;
+  google.protobuf.Timestamp stored_at = 15;
+  // The file is deleted at this time even without every acknowledgement.
+  // Analysis works nearest deadline first.
+  google.protobuf.Timestamp delete_after = 16;
+  // The consumers that must acknowledge before the file may be deleted.
+  repeated string required_consumers = 17;
+  securebrand.content.v1.Provenance provenance = 18;
+}
+
+message StorageObject {
+  string bucket = 1;
+  string key = 2;
+  int64 size_bytes = 3;
+  // Hex SHA-256 of the file.
+  string sha256 = 4;
+  string content_type = 5;
+  // A perceptual hash, when computed, so the same picture on several
+  // platforms can be matched after the file is gone (entity linking).
+  string perceptual_hash = 6;
+}
+
+// MediaProcessed is a consumer's acknowledgement (topic
+// content.media.processed.v1, key: the media ID).
+message MediaProcessed {
+  string event_id = 1;
+  string media_id = 2;
+  // sb-analysis, or another required consumer.
+  string consumer = 3;
+  ProcessStatus status = 4;
+  google.protobuf.Timestamp processed_at = 5;
+  string error = 6;
+  string platform = 7;
+}
+
+enum ProcessStatus {
+  PROCESS_STATUS_UNSPECIFIED = 0;
+  PROCESS_STATUS_PROCESSED = 1;
+  PROCESS_STATUS_FAILED_PERMANENT = 2;
+  PROCESS_STATUS_FAILED_RETRYABLE = 3;
+  // The consumer's policy skips this kind of media.
+  PROCESS_STATUS_SKIPPED = 4;
+}
+
+// MediaDeleted records that a file was removed from storage (topic
+// content.media.deleted.v1, key: the media ID). The Media record itself is
+// kept forever.
+message MediaDeleted {
+  string event_id = 1;
+  string media_id = 2;
+  DeleteReason reason = 3;
+  google.protobuf.Timestamp deleted_at = 4;
+  string platform = 5;
+}
+
+enum DeleteReason {
+  DELETE_REASON_UNSPECIFIED = 0;
+  // Every required consumer acknowledged it.
+  DELETE_REASON_PROCESSED = 1;
+  // delete_after passed first.
+  DELETE_REASON_EXPIRED = 2;
+}

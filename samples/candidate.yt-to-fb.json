@@ -1,0 +1,12 @@
+{
+  "event_id": "evt-cand-0001",
+  "target_platform": "fb",
+  "account": {"platform": "fb", "handle": "fake.other", "url": "https://www.facebook.com/fake.other"},
+  "found_at": "2026-11-06T09:00:00Z",
+  "found_by": "yts",
+  "source_platform": "yt",
+  "source": "SOURCE_PROFILE_LINK",
+  "evidence": [{"content_id": "yt:account:UCfake0000000000000001", "url": "https://www.youtube.com/@fake_channel_1/about", "via": "about_panel"}],
+  "relevance": {"score": 5.5, "matched_rules": ["stated-country-IQ"]},
+  "outcome": "OUTCOME_PENDING"
+}

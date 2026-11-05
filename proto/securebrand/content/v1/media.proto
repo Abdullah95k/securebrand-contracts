@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Media is what is known about an image, video or sound file (topic
+// content.media.v1, key: the media ID). Media IDs are the collector's own,
+// stable across reads (for example a UUIDv5 of owner, kind and variant). The
+// file itself, when downloaded, is announced on content.media.ready.v1
+// (securebrand.media.v1).
+message Media {
+  Envelope envelope = 1;
+  // The post, comment, account or audio it belongs to.
+  string owner_id = 2;
+  string owner_kind = 3;
+  MediaType type = 4;
+  MediaRole role = 5;
+  // The platform's own finer kind (carousel_child, dynamic_cover, sticker).
+  string platform_kind = 6;
+  // original, hd, sd, thumbnail.
+  string variant = 7;
+  int32 position = 8;
+  string platform_media_id = 9;
+  // CDN URLs expire; never treat them as permanent.
+  string source_url = 10;
+  google.protobuf.Timestamp source_expires_at = 11;
+  optional int32 width = 12;
+  optional int32 height = 13;
+  optional int64 duration_ms = 14;
+  string mime = 15;
+  optional int64 size_bytes = 16;
+  // The platform's own description (Facebook and Instagram automatic alt
+  // text).
+  string alt_text = 17;
+  google.protobuf.Struct extras = 99;
+}

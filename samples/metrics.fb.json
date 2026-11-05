@@ -1,0 +1,18 @@
+{
+  "envelope": {
+    "event_id": "evt-fb-metrics-0001", "platform": "fb", "kind": "metrics",
+    "id": "fb:post:100000000000001", "native_id": "100000000000001",
+    "observed_at": "2026-11-06T12:00:00Z", "version": "1794052800000000",
+    "provenance": {"collector": "fbs", "collector_version": "1.4.0", "parser_version": "9",
+      "source_operation": "timeline", "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT", "mode": "CRAWL_MODE_REFRESH"}
+  },
+  "target_kind": "post",
+  "parent_id": "fb:account:100064000000001",
+  "counts": {
+    "likes": {"value": "1250", "exactness": "COUNT_EXACTNESS_EXACT"},
+    "comments": {"value": "90", "exactness": "COUNT_EXACTNESS_EXACT"},
+    "shares": {"value": "12", "exactness": "COUNT_EXACTNESS_EXACT"},
+    "reactions": {"like": {"value": "1000"}, "love": {"value": "200"}, "haha": {"value": "50"}},
+    "reactions_complete": true
+  }
+}

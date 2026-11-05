@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Comment is a comment or a reply (topic content.comment.v1, key: the POST
+// ID, so a post's comments stay in order). A comment always has a post; a
+// reply also has a parent.
+//
+// Depth means the same everywhere: 0 is a comment on the post, 1 a reply to
+// it, 2 a reply to a reply. Platforms with one reply level (YouTube) set
+// parent = root and depth 1; TikTok's reply_id is the root and its
+// reply_to_reply_id the parent.
+message Comment {
+  Envelope envelope = 1;
+  string post_id = 2;
+  // The post's account.
+  string account_id = 3;
+  // The direct parent (replies only).
+  string parent_comment_id = 4;
+  // The top-level comment of the thread (replies only).
+  string root_comment_id = 5;
+  int32 depth = 6;
+  Author author = 7;
+  Text text = 8;
+  Time published_at = 9;
+  // Stickers, GIFs, images, videos attached.
+  repeated MediaRef attachments = 10;
+  repeated Link links = 11;
+  CommentFlags flags = 12;
+  // The counts read with this observation, if any.
+  Engagement counts = 13;
+  Status status = 14;
+  Relevance relevance = 15;
+  google.protobuf.Struct extras = 99;
+}
+
+message Author {
+  // The author's account. On every platform a commenter is an account, so
+  // commenters link to content.account and across platforms.
+  AccountRef account = 1;
+  // Verified, membership, top-fan and similar badges.
+  repeated Badge badges = 2;
+  // The platform hides the author of this comment (Facebook, sometimes).
+  bool hidden = 3;
+}
+
+message Badge {
+  // verified, member, creator, top_fan, moderator...
+  string kind = 1;
+  // As shown ("Member (2 years)").
+  string detail = 2;
+}
+
+message CommentFlags {
+  // Written by the post's own account (page or creator).
+  optional bool by_post_owner = 1;
+  optional bool pinned = 2;
+  // Liked or hearted by the creator.
+  optional bool liked_by_creator = 3;
+  optional bool edited = 4;
+  Time edited_at = 5;
+}

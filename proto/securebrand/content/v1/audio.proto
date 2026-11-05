@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Audio is a sound or track that many posts can use: TikTok sounds,
+// Instagram Reels audio, YouTube Shorts audio (topic content.audio.v1, key:
+// the audio ID). A trend signal of its own.
+message Audio {
+  Envelope envelope = 1;
+  string title = 2;
+  string artist = 3;
+  // The account that made an original sound.
+  AccountRef author = 4;
+  // An original sound, not a licensed track.
+  optional bool original = 5;
+  optional int64 duration_ms = 6;
+  string album = 7;
+  MediaRef cover = 8;
+  optional bool copyrighted = 9;
+  optional bool commercial = 10;
+  string url = 11;
+  // How many posts use it, when the platform shows it.
+  Count uses = 12;
+  google.protobuf.Struct extras = 99;
+}

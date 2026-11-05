@@ -1,0 +1,31 @@
+# Platform codes. Adding a platform means adding a row here and a mapping
+# in its collector; no message changes. Codes are lower case, 1-4 letters.
+platforms:
+  - {code: fb, name: Facebook, collector: fbs, status: active}
+  - {code: ig, name: Instagram, collector: igs, status: active}
+  - {code: tt, name: TikTok, collector: tks, status: active}
+  - {code: yt, name: YouTube, collector: yts, status: active}
+  # Reserved: not in scope (owner, 5 Nov). Listed so codes never clash.
+  - {code: x, name: X, status: reserved}
+  - {code: tg, name: Telegram, status: reserved}
+  - {code: th, name: Threads, status: reserved}
+  - {code: li, name: LinkedIn, status: reserved}
+  - {code: sc, name: Snapchat, status: reserved}
+  - {code: web, name: News and other websites, status: reserved}
+
+# The kind inside an ID: "<platform>:<entity kind>:<native id>". Never a
+# subtype (reel, short, reply, story go in type and subtype fields).
+entity_kinds: [account, post, comment, media, audio, playlist, live_chat]
+
+# Envelope.kind of each message, and the entity kind its Envelope.id has.
+message_kinds:
+  account: [account]
+  account_snapshot: [account]
+  post: [post]
+  comment: [comment]
+  metrics: [post, comment]
+  media: [media]
+  audio: [audio]
+  playlist: [playlist]
+  live_chat_message: [live_chat]
+  transcript: [post]

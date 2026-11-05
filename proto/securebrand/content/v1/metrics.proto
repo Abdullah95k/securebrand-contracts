@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Metrics is one observation of a post's or comment's counts (topic
+// content.metrics.v1, key: the POST ID, so counts stay in order with their
+// comments). Envelope.id is the target's ID.
+//
+// Volume rule: a collector publishes Metrics when any count changed since
+// its last published observation of that target, and at least once a day
+// for every target it is still refreshing. Storage keeps every event it
+// receives.
+message Metrics {
+  Envelope envelope = 1;
+  // post or comment.
+  string target_kind = 2;
+  // For a comment, its post; for a post, its account.
+  string parent_id = 3;
+  Engagement counts = 4;
+  google.protobuf.Struct extras = 99;
+}

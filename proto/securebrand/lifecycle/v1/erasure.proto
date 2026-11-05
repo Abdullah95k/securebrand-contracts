@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+// securebrand.lifecycle.v1: kept DORMANT. The owner keeps all data (R6,
+// D-003). This message exists so the erasure paths already built into some
+// services have one agreed shape; it is published only on the owner's
+// written order, and no new deletion workflow is built on it.
+package securebrand.lifecycle.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/lifecycle/v1;lifecyclev1";
+
+// Erasure (topic lifecycle.erasure.v1, key: the subject).
+message Erasure {
+  string event_id = 1;
+  string request_id = 2;
+  string platform = 3;
+  SubjectType subject_type = 4;
+  // The account or person ID, "<platform>:account:<native id>".
+  string subject_id = 5;
+  // The owner's written order this carries out.
+  string owner_order_ref = 6;
+  google.protobuf.Timestamp requested_at = 7;
+}
+
+enum SubjectType {
+  SUBJECT_TYPE_UNSPECIFIED = 0;
+  SUBJECT_TYPE_PERSON = 1;
+  SUBJECT_TYPE_ACCOUNT = 2;
+}
