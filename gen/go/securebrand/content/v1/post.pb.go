@@ -359,7 +359,7 @@ type Post struct {
 	Location *Location `protobuf:"bytes,16,opt,name=location,proto3" json:"location,omitempty"`
 	// ISO country the post was made in, when the platform says: a strong
 	// relevance signal where present. TikTok's web answers don't carry it
-	// (tks measured 0 of 554 posts), so tks leaves it unset.
+	// (tks measured 0 of 584 posts), so tks leaves it unset.
 	CreatedInCountry string `protobuf:"bytes,17,opt,name=created_in_country,json=createdInCountry,proto3" json:"created_in_country,omitempty"`
 	// The post this one shares, quotes, duets or stitches.
 	Reshare *Reshare   `protobuf:"bytes,18,opt,name=reshare,proto3" json:"reshare,omitempty"`

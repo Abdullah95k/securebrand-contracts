@@ -4,7 +4,7 @@ All notable changes to the contract. Fields are only ever added; a breaking chan
 
 ## Unreleased (documentation only)
 
-- `created_in_country`: TikTok's web answers don't carry the post's country after all (tks measured 0 of 554 posts on 5 and 6 Nov), so tks leaves it unset. The field stays for platforms that give it. README, field matrix, the field's comment and the TikTok post sample corrected. No schema change.
+- `created_in_country`: TikTok's web answers don't carry the post's country after all (tks measured 0 of 584 posts on 5 and 6 Nov), so tks leaves it unset. The field stays for platforms that give it. README, field matrix, the field's comment and the TikTok post sample corrected. No schema change.
 
 ## v1.0.0, 6 November 2026
 
