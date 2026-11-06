@@ -147,7 +147,7 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 ## The rules collectors follow
 
 1. Only add fields; never rename, renumber or remove. A breaking change is a new major version (`content.post.v2`), run in parallel during migration.
-2. Run `conformance` on what you produce, in CI (standard G5), against the samples and your fake platform.
+2. Run `conformance` on what you produce, in CI (standard G5), against the samples and your fake platform. Every message type that can be published has a check (since v1.2.0, the media acknowledgements and deletions and the four analysis messages too).
 3. Map by these rules:
 
    | Platform value | Contract |

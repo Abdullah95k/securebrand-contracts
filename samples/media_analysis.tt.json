@@ -1,0 +1,20 @@
+{
+  "event_id": "evt-an-media-0001", "platform": "tt",
+  "media_id": "tt:media:00000000-0000-5000-8000-000000000002",
+  "owner_id": "tt:post:7400000000000000001", "owner_kind": "post",
+  "account_id": "tt:account:7000000000000000001",
+  "type": "MEDIA_TYPE_VIDEO", "role": "MEDIA_ROLE_CONTENT",
+  "logos": [{"entity_id": "ent-fake-brand", "name": "Fake Brand Iraq", "confidence": 0.88}],
+  "text_in_image": "عرض خاص", "description": "A shop front with a phone advert.",
+  "labels": ["shop", "phone", "advert"], "people_count": 2,
+  "sentiment": {"label": "positive", "score": 0.4, "confidence": 0.8, "calibrated_confidence": 0.74},
+  "entities": [{"entity_id": "ent-fake-brand", "name": "Fake Brand Iraq", "type": "brand", "origin": "video"}],
+  "topics": ["services.telecom.offers", "@ent-fake-brand"],
+  "transcript": "عرض جديد لكل المشتركين", "transcript_lang": "ar", "transcript_source": "platform_captions",
+  "ad_type": "own",
+  "provenance": {"producer": "sb-analysis", "producer_version": "0.6.0", "provider": "example-provider",
+    "model": "example-vision-model", "prompt_version": "m3", "taxonomy_version": "t3", "schema_version": "s2",
+    "route": "video", "lane": "batch", "analyzed_at": "2026-11-06T09:30:00Z",
+    "input_hash": "aa00000000000000000000000000000000000000000000000000000000000002",
+    "analysis_version": 1, "purpose": "current"}
+}

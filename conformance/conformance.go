@@ -518,9 +518,145 @@ func ItemAnalysis(m *analysisv1.ItemAnalysis, opt Options) error {
 	if m.GetContentVersion() <= 0 {
 		p.addf("content_version must be the analysed item's envelope.version")
 	}
-	pv := m.GetProvenance()
+	checkProvenance(&p, m.GetProvenance())
+	return p.Err()
+}
+
+// MediaProcessed checks a content.media.processed.v1 event: a consumer's
+// acknowledgement of one file. Since v1.2.0.
+func MediaProcessed(m *mediav1.MediaProcessed, opt Options) error {
+	var p Problems
+	r, _ := Load()
+	if m.GetEventId() == "" {
+		p.addf("event_id empty")
+	}
+	if k := checkID(&p, r, "media_id", m.GetMediaId(), m.GetPlatform(), opt); k != "" && k != "media" {
+		p.addf("media_id kind %q, want media", k)
+	}
+	if !r.consumer(m.GetConsumer()) {
+		p.addf("consumer %q is not in the registry's consumers", m.GetConsumer())
+	}
+	switch m.GetStatus() {
+	case mediav1.ProcessStatus_PROCESS_STATUS_UNSPECIFIED:
+		p.addf("status unspecified")
+	case mediav1.ProcessStatus_PROCESS_STATUS_PROCESSED:
+	default:
+		if m.GetReason() == "" {
+			p.addf("a %s acknowledgement needs a reason code", m.GetStatus())
+		}
+	}
+	if m.GetProcessedAt() == nil {
+		p.addf("processed_at missing")
+	}
+	return p.Err()
+}
+
+// MediaDeleted checks a content.media.deleted.v1 event. Since v1.2.0.
+func MediaDeleted(m *mediav1.MediaDeleted, opt Options) error {
+	var p Problems
+	r, _ := Load()
+	if m.GetEventId() == "" {
+		p.addf("event_id empty")
+	}
+	if k := checkID(&p, r, "media_id", m.GetMediaId(), m.GetPlatform(), opt); k != "" && k != "media" {
+		p.addf("media_id kind %q, want media", k)
+	}
+	if m.GetReason() == mediav1.DeleteReason_DELETE_REASON_UNSPECIFIED {
+		p.addf("reason unspecified")
+	}
+	if m.GetDeletedAt() == nil {
+		p.addf("deleted_at missing")
+	}
+	return p.Err()
+}
+
+// checkProvenance: who made an analysis result, which version of it, when.
+func checkProvenance(p *Problems, pv *analysisv1.Provenance) {
 	if pv.GetProducer() == "" || pv.GetAnalysisVersion() == 0 || pv.GetAnalyzedAt() == nil {
 		p.addf("provenance needs producer, analysis_version and analyzed_at")
+	}
+}
+
+// MediaAnalysis checks an analysis.media.v1 event. Since v1.2.0.
+func MediaAnalysis(m *analysisv1.MediaAnalysis, opt Options) error {
+	var p Problems
+	r, _ := Load()
+	if m.GetEventId() == "" {
+		p.addf("event_id empty")
+	}
+	if k := checkID(&p, r, "media_id", m.GetMediaId(), m.GetPlatform(), opt); k != "" && k != "media" {
+		p.addf("media_id kind %q, want media", k)
+	}
+	checkOwner(&p, r, m.GetOwnerId(), m.GetOwnerKind(), m.GetPlatform(), opt)
+	if a := m.GetAccountId(); a != "" {
+		if k := checkID(&p, r, "account_id", a, m.GetPlatform(), opt); k != "" && k != "account" {
+			p.addf("account_id kind %q, want account", k)
+		}
+	}
+	if m.GetType() == contentv1.MediaType_MEDIA_TYPE_UNSPECIFIED {
+		p.addf("type unspecified")
+	}
+	if m.GetTranscript() != "" && (m.GetTranscriptLang() == "" || m.GetTranscriptSource() == "") {
+		p.addf("a transcript needs transcript_lang and transcript_source")
+	}
+	checkProvenance(&p, m.GetProvenance())
+	return p.Err()
+}
+
+var botLevels = map[string]bool{"": true, "suspected": true, "likely": true, "confirmed": true}
+
+// AuthorFlag checks an analysis.author.v1 event. Since v1.2.0.
+func AuthorFlag(m *analysisv1.AuthorFlag, opt Options) error {
+	var p Problems
+	r, _ := Load()
+	if m.GetEventId() == "" {
+		p.addf("event_id empty")
+	}
+	if k := checkID(&p, r, "author_id", m.GetAuthorId(), m.GetPlatform(), opt); k != "" && k != "account" {
+		p.addf("author_id kind %q, want account", k)
+	}
+	if !botLevels[m.GetBot()] {
+		p.addf("bot %q: want empty, suspected, likely or confirmed", m.GetBot())
+	}
+	if m.GetScore() < 0 {
+		p.addf("score %d is negative", m.GetScore())
+	}
+	if m.GetScoredAt() == nil {
+		p.addf("scored_at missing")
+	}
+	return p.Err()
+}
+
+// TopicUpdate checks an analysis.topic.v1 event. Since v1.2.0.
+func TopicUpdate(m *analysisv1.TopicUpdate, opt Options) error {
+	var p Problems
+	if m.GetEventId() == "" {
+		p.addf("event_id empty")
+	}
+	id := m.GetTopicId()
+	if id == "" {
+		p.addf("topic_id empty")
+	}
+	if par := m.GetParentId(); par != "" && !strings.HasPrefix(id, par+".") {
+		p.addf("topic_id %q doesn't start with its parent %q and a dot", id, par)
+	}
+	switch m.GetStatus() {
+	case "active", "rejected":
+		if m.GetMergedInto() != "" {
+			p.addf("merged_into is set, but status is %q", m.GetStatus())
+		}
+	case "merged":
+		if m.GetMergedInto() == "" || m.GetMergedInto() == id {
+			p.addf("a merged topic needs merged_into, another topic's ID")
+		}
+	default:
+		p.addf("status %q: want active, merged or rejected", m.GetStatus())
+	}
+	if m.GetTaxonomyVersion() == "" {
+		p.addf("taxonomy_version empty")
+	}
+	if m.GetUpdatedAt() == nil {
+		p.addf("updated_at missing")
 	}
 	return p.Err()
 }
