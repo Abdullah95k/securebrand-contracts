@@ -1,0 +1,6 @@
+{
+  "event_id": "evt-tt-deleted-0001", "platform": "tt",
+  "media_id": "tt:media:00000000-0000-5000-8000-000000000001",
+  "reason": "DELETE_REASON_PROCESSED",
+  "deleted_at": "2026-11-06T09:08:00Z"
+}

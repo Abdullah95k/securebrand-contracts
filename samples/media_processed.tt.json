@@ -1,0 +1,7 @@
+{
+  "event_id": "evt-tt-processed-0001", "platform": "tt",
+  "media_id": "tt:media:00000000-0000-5000-8000-000000000001",
+  "consumer": "sb-analysis",
+  "status": "PROCESS_STATUS_PROCESSED",
+  "processed_at": "2026-11-06T09:07:30Z"
+}

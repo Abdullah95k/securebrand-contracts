@@ -2,6 +2,18 @@
 
 All notable changes to the contract. Fields are only ever added; a breaking change is a new major version.
 
+## v1.2.0, 6 November 2026
+
+Conformance only; no schema change. Asked for by the analysis session for its contract adoption (REQ-022).
+
+- New checks: `conformance.MediaProcessed`, `MediaDeleted`, `MediaAnalysis`, `AuthorFlag` and `TopicUpdate`. Every published message type now has one.
+  - Acknowledgements need a registered consumer, a status, and a reason code unless processed.
+  - Deletions need a reason.
+  - Media analysis checks its media ID, owner and account, needs a type, wants a transcript's language and source, and requires provenance.
+  - Author flags need an account ID and a known bot level.
+  - Topic updates must sit under their parent, a merged topic must name another topic, and the status must be known.
+- Synthetic samples for each of the five.
+
 ## v1.1.0, 6 November 2026
 
 Additions only; every v1.0.0 record is still valid. From the Instagram discovery session's plan (its C1, C2 and K2), decided by the master (D-025, D-027).

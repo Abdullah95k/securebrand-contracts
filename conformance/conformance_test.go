@@ -33,6 +33,11 @@ var check = map[string]struct {
 	"candidate":        {func() proto.Message { return &discoveryv1.Candidate{} }, func(m proto.Message, o Options) error { return Candidate(m.(*discoveryv1.Candidate), o) }},
 	"playlist":         {func() proto.Message { return &contentv1.Playlist{} }, func(m proto.Message, o Options) error { return Playlist(m.(*contentv1.Playlist), o) }},
 	"item_analysis":    {func() proto.Message { return &analysisv1.ItemAnalysis{} }, func(m proto.Message, o Options) error { return ItemAnalysis(m.(*analysisv1.ItemAnalysis), o) }},
+	"media_processed":  {func() proto.Message { return &mediav1.MediaProcessed{} }, func(m proto.Message, o Options) error { return MediaProcessed(m.(*mediav1.MediaProcessed), o) }},
+	"media_deleted":    {func() proto.Message { return &mediav1.MediaDeleted{} }, func(m proto.Message, o Options) error { return MediaDeleted(m.(*mediav1.MediaDeleted), o) }},
+	"media_analysis":   {func() proto.Message { return &analysisv1.MediaAnalysis{} }, func(m proto.Message, o Options) error { return MediaAnalysis(m.(*analysisv1.MediaAnalysis), o) }},
+	"author_flag":      {func() proto.Message { return &analysisv1.AuthorFlag{} }, func(m proto.Message, o Options) error { return AuthorFlag(m.(*analysisv1.AuthorFlag), o) }},
+	"topic_update":     {func() proto.Message { return &analysisv1.TopicUpdate{} }, func(m proto.Message, o Options) error { return TopicUpdate(m.(*analysisv1.TopicUpdate), o) }},
 }
 
 func load(t *testing.T, path string) (proto.Message, func(proto.Message, Options) error) {
@@ -113,6 +118,40 @@ func TestRulesCatchMistakes(t *testing.T) {
 		}},
 		{"day estimate not at Iraq midnight", "comment.yt.json", "isn't 00:00 Iraq time", func(m proto.Message) {
 			m.(*contentv1.Comment).PublishedAt.At = timestamppb.New(time.Date(2026, 11, 3, 9, 0, 0, 0, time.UTC))
+		}},
+		{"acknowledgement by an unknown consumer", "media_processed.tt.json", "not in the registry's consumers", func(m proto.Message) {
+			m.(*mediav1.MediaProcessed).Consumer = "someone-else"
+		}},
+		{"skipped without a reason", "media_processed.tt.json", "needs a reason code", func(m proto.Message) {
+			x := m.(*mediav1.MediaProcessed)
+			x.Status = mediav1.ProcessStatus_PROCESS_STATUS_SKIPPED
+			x.Reason = ""
+		}},
+		{"deletion without a reason", "media_deleted.tt.json", "reason unspecified", func(m proto.Message) {
+			m.(*mediav1.MediaDeleted).Reason = mediav1.DeleteReason_DELETE_REASON_UNSPECIFIED
+		}},
+		{"media analysis of a comment-owned file mislabelled", "media_analysis.tt.json", "differs from owner_id's kind", func(m proto.Message) {
+			m.(*analysisv1.MediaAnalysis).OwnerKind = "comment"
+		}},
+		{"media analysis without provenance", "media_analysis.tt.json", "provenance needs", func(m proto.Message) {
+			m.(*analysisv1.MediaAnalysis).Provenance = nil
+		}},
+		{"transcript without its language", "media_analysis.tt.json", "transcript needs", func(m proto.Message) {
+			m.(*analysisv1.MediaAnalysis).TranscriptLang = ""
+		}},
+		{"unknown bot level", "author_flag.tt.json", "want empty, suspected", func(m proto.Message) {
+			m.(*analysisv1.AuthorFlag).Bot = "maybe"
+		}},
+		{"author flag on a post ID", "author_flag.tt.json", "want account", func(m proto.Message) {
+			m.(*analysisv1.AuthorFlag).AuthorId = "tt:post:7400000000000000001"
+		}},
+		{"sub-topic outside its parent", "topic_update.json", "doesn't start with its parent", func(m proto.Message) {
+			m.(*analysisv1.TopicUpdate).ParentId = "services.banking"
+		}},
+		{"merged topic without a target", "topic_update.json", "needs merged_into", func(m proto.Message) {
+			x := m.(*analysisv1.TopicUpdate)
+			x.Status = "merged"
+			x.MergedInto = ""
 		}},
 		{"keyword ID not in KeywordID's form", "candidate.yt-to-fb.json", "not contracts.KeywordID's form", func(m proto.Message) {
 			c := m.(*discoveryv1.Candidate)

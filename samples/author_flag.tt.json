@@ -1,0 +1,7 @@
+{
+  "event_id": "evt-an-author-0001", "platform": "tt",
+  "author_id": "tt:account:7000000000000000099",
+  "bot": "suspected", "score": 62,
+  "reasons": ["burst", "repetition", "no_sleep"],
+  "scored_at": "2026-11-06T10:00:00Z"
+}

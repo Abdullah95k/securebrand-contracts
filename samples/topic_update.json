@@ -1,0 +1,8 @@
+{
+  "event_id": "evt-an-topic-0001",
+  "topic_id": "services.telecom.offers", "parent_id": "services.telecom",
+  "name_en": "Telecom offers", "name_ar": "عروض الاتصالات",
+  "status": "active",
+  "taxonomy_version": "t3",
+  "updated_at": "2026-11-06T10:15:00Z"
+}
