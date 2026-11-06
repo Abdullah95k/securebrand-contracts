@@ -75,6 +75,9 @@ type Options struct {
 	// Production forbids test-only values (the CAPPED discovery outcome) and
 	// reserved platform codes.
 	Production bool
+	// Canary allows the CAPPED discovery outcome in production while a
+	// collector's canary runs (owner D-012). It changes nothing else.
+	Canary bool
 }
 
 func (r Registry) platformStatus(code string) string {
@@ -468,8 +471,16 @@ func Candidate(m *discoveryv1.Candidate, opt Options) error {
 	if m.GetSource() == discoveryv1.Source_SOURCE_UNSPECIFIED {
 		p.addf("source unspecified")
 	}
-	if opt.Production && m.GetOutcome() == discoveryv1.Outcome_OUTCOME_CAPPED {
-		p.addf("outcome CAPPED is not allowed in production (owner D-008: no discovery caps)")
+	if opt.Production && !opt.Canary && m.GetOutcome() == discoveryv1.Outcome_OUTCOME_CAPPED {
+		p.addf("outcome CAPPED is not allowed in production outside a canary (owner D-008, D-012)")
+	}
+	for i, e := range m.GetEvidence() {
+		if e.GetContentTime() != nil {
+			checkTime(&p, fmt.Sprintf("evidence[%d].content_time", i), e.GetContentTime())
+		}
+		if id := e.GetKeywordId(); id != "" && !contracts.ValidKeywordID(id) {
+			p.addf("evidence[%d].keyword_id %q is not contracts.KeywordID's form", i, id)
+		}
 	}
 	return p.Err()
 }

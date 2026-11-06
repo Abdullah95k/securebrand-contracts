@@ -6,7 +6,7 @@ import _ "embed"
 
 // Version is the contract version. Producers put it in every record's
 // "sb-contract" header.
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 // PlatformsYAML is registry/platforms.yaml.
 //

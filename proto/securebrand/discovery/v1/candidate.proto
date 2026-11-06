@@ -66,9 +66,13 @@ enum Source {
   SOURCE_GRAPH = 15;
   SOURCE_CLIENT_REQUEST = 16;
   SOURCE_IMPORT = 17;
+  // A place's page (Instagram location pages). Since v1.1.0.
+  SOURCE_LOCATION_PAGE = 18;
 }
 
 message Evidence {
+  // contracts.KeywordID(group, language, spelling): the same word gives the
+  // same ID in every service.
   string keyword_id = 1;
   string keyword = 2;
   string language = 3;
@@ -79,6 +83,10 @@ message Evidence {
   int64 sightings = 6;
   int64 distinct_sources = 7;
   string via = 8;
+  // When the matching post or comment was made, so "mentioned in the last
+  // 6 hours" can be checked downstream. The estimate rule (D-013) applies.
+  // Since v1.1.0.
+  securebrand.content.v1.Time content_time = 9;
 }
 
 enum Outcome {
