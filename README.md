@@ -35,6 +35,8 @@ It was built from every collector's field inventory and contract notes (fbs, igs
 | `samples/` | Synthetic sample events, one or more per message type, tested |
 | `docs/field-matrix.md` | Every unified field, against what each platform gives logged out |
 
+**Releases** are published automatically: when a new `contracts.Version` (in `registry.go`) reaches `main`, the `release` workflow tags it and publishes its `CHANGELOG.md` section.
+
 Check it, from the repository's root:
 
 ```bash
