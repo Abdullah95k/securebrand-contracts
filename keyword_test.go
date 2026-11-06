@@ -9,15 +9,19 @@ func TestKeywordID(t *testing.T) {
 		{"baghdad", "ar", "بَغْدَاد", "baghdad:ar:بغداد"},
 		{"basra", "ar", "البصـــرة", "basra:ar:البصره"},
 		{"iraq", "ar", "أَلعِراق", "iraq:ar:العراق"},
-		// Alef maksura and Farsi yeh are the same yeh; keheh is kaf.
-		{"ali", "ar", "علی", "ali:ar:علي"},
-		{"karbala", "ar", "کربلاء", "karbala:ar:كربلاء"},
-		// Kurdish letters stay.
-		{"hawler", "ckb", "هەولێر", "hawler:ckb:هەولێر"},
-		// Latin: lower case, spaces collapsed; group and language lower-cased.
+		// Arabic yeh and alef maksura become Kurdish yeh; kaf becomes keheh.
+		{"ali", "ar", "علي", "ali:ar:علی"},
+		{"karbala", "ar", "كربلاء", "karbala:ar:کربلاء"},
+		// Sorani typed with ە, or with ه and a ZWNJ, gives one ID.
+		{"hawler", "ckb", "هەولێر", "hawler:ckb:ههولێر"},
+		{"hawler", "ckb", "هه‌ولێر", "hawler:ckb:ههولێر"},
+		// Latin: lower case, accents, apostrophes, hyphens, spaces.
 		{"Erbil", "EN", "  Erbil   Citadel ", "erbil:en:erbil citadel"},
-		// Arabic presentation forms (U+FExx) fold to ordinary letters.
-		{"iraq", "ar", "ﺍﻟﻌﺮﺍﻖ", "iraq:ar:العراق"},
+		{"baquba", "en", "Ba'quba", "baquba:en:baquba"},
+		{"qaim", "en", "Al-Qaim", "qaim:en:al qaim"},
+		{"duhok", "kmr", "Dihêk", "duhok:kmr:dihek"},
+		// Arabic-Indic digits become ASCII.
+		{"phone", "ar", "٩٦٤", "phone:ar:964"},
 	}
 	for _, c := range cases {
 		if got := KeywordID(c.group, c.lang, c.spelling); got != c.want {
@@ -32,7 +36,7 @@ func TestKeywordID(t *testing.T) {
 func TestValidKeywordID(t *testing.T) {
 	for _, id := range []string{
 		"", "baghdad", "baghdad:ar", "Baghdad:ar:بغداد", "baghdad:arabic:بغداد",
-		"baghdad:ar: بغداد", "baghdad:ar:بَغْدَاد", "erbil:en:Erbil",
+		"baghdad:ar: بغداد", "baghdad:ar:بَغْدَاد", "erbil:en:Erbil", "ali:ar:علي",
 	} {
 		if ValidKeywordID(id) {
 			t.Errorf("ValidKeywordID(%q) = true", id)

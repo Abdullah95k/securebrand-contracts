@@ -4,68 +4,99 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
-
-	"golang.org/x/text/unicode/norm"
 )
 
 // KeywordID is a keyword's ID in the shared keyword list:
-// "<group>:<language>:<folded spelling>", for example
-// "baghdad:ar:بغداد". Every service computes it the same way, so the same
-// word has the same ID everywhere, with no central counter. Discovery's
-// Evidence.keyword_id and Relevance.matched_keyword_ids use it.
+// "<group>:<language>:<folded spelling>", for example "baghdad:ar:بغداد".
+// Every service computes it the same way, so the same keyword has the same
+// ID everywhere, with no central counter. Discovery's Evidence.keyword_id
+// and Relevance.matched_keyword_ids use it.
 //
-// group and language are lower-case ASCII ("baghdad", "ar", "ckb",
-// "kmr", "en"). The spelling is folded with FoldKeyword.
+// Compute it from the keyword list's stored spelling, never from the text
+// that matched: two spellings a fold doesn't merge would give two IDs.
+// group and language are lower-case ASCII ("baghdad"; "en", "ar", "ckb",
+// "kmr"). The spelling is folded with FoldKeyword.
 func KeywordID(group, language, spelling string) string {
 	return asciiLower(group) + ":" + asciiLower(language) + ":" + FoldKeyword(spelling)
 }
 
-// FoldKeyword folds a spelling so that variants a person would read as the
-// same word match:
-//   - Unicode NFKC (Arabic presentation forms become ordinary letters);
-//   - lower case;
-//   - Arabic diacritics (harakat, shadda, sukun, superscript alef) and
-//     tatweel removed;
-//   - alef with hamza or madda, and alef wasla, become a bare alef (ا);
-//   - teh marbuta (ة) becomes heh (ه), alef maksura (ى) and Farsi yeh (ی)
-//     become yeh (ي), keheh (ک) becomes kaf (ك);
-//   - Kurdish letters (ڕ ڵ ۆ ێ ە) are kept as they are;
-//   - spaces collapsed to one, and trimmed.
+// FoldKeyword is the spelling fold fbs and igs already share
+// (fbs internal/discovery, igs internal/keywords Normalize), so IDs agree
+// with what they match. Services may call this instead of their own copy.
+//
+//   - Arabic script: harakat, the superscript alef, tatweel and zero-width
+//     joiners and marks are dropped (Sorani is often typed with a ZWNJ inside
+//     a word: هه‌ولێر); أ إ آ ٱ fold to ا; ة and Sorani ە fold to ه; ي ى and
+//     ی fold to ی, and ك to ک, the forms Kurdish uses, so Arabic and Kurdish
+//     keyboards agree. Kurdish letters of their own (ێ ۆ ڵ ڕ ڤ گ چ پ ژ) are
+//     kept. Arabic-Indic digits become ASCII.
+//   - Latin script: lower case; accents folded (ê→e, î→i, û→u, ç→c, ş→s,
+//     ğ→g, ı→i, and the common Western accents); apostrophes dropped
+//     (Ba'quba, Baquba); hyphens and underscores become spaces.
+//   - Whitespace collapsed and trimmed.
+//
+// The Arabic article ال is not stripped.
 func FoldKeyword(s string) string {
-	s = norm.NFKC.String(s)
 	var b strings.Builder
+	b.Grow(len(s))
 	space := false
 	for _, r := range s {
-		if unicode.IsSpace(r) {
+		r = foldRune(r)
+		switch {
+		case r == dropRune:
+			continue
+		case unicode.IsSpace(r):
 			space = b.Len() > 0
 			continue
-		}
-		if isArabicMark(r) {
-			continue
-		}
-		if f, ok := arabicFold[r]; ok {
-			r = f
 		}
 		if space {
 			b.WriteByte(' ')
 			space = false
 		}
-		b.WriteRune(unicode.ToLower(r))
+		b.WriteRune(r)
 	}
 	return b.String()
 }
 
-var arabicFold = map[rune]rune{
-	'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ٱ': 'ا',
-	'ة': 'ه',
-	'ى': 'ي', 'ی': 'ي',
-	'ک': 'ك',
+const dropRune = rune(-1)
+
+func foldRune(r rune) rune {
+	switch {
+	case r >= 0x064B && r <= 0x065F, r == 0x0670, r == 0x0640, // harakat, superscript alef, tatweel
+		r == 0x200C, r == 0x200D, r == 0x200E, r == 0x200F, r == 0xFEFF: // ZWNJ, ZWJ, marks, BOM
+		return dropRune
+	case r == '\'', r == '’', r == 'ʼ', r == '‘', r == '`':
+		return dropRune
+	case r == '-', r == '_', r == 0x2010, r == 0x2011, r == 0x2013:
+		return ' '
+	case r >= 0x0660 && r <= 0x0669: // Arabic-Indic digits
+		return '0' + (r - 0x0660)
+	case r >= 0x06F0 && r <= 0x06F9: // Extended Arabic-Indic digits
+		return '0' + (r - 0x06F0)
+	}
+	switch r {
+	case 'أ', 'إ', 'آ', 'ٱ':
+		return 'ا'
+	case 'ة', 'ە':
+		return 'ه'
+	case 'ي', 'ى':
+		return 'ی'
+	case 'ك':
+		return 'ک'
+	}
+	if f, ok := latinFold[r]; ok {
+		return f
+	}
+	return unicode.ToLower(r)
 }
 
-// isArabicMark: harakat and other combining marks (U+064B–U+065F),
-// superscript alef (U+0670), Quranic marks (U+06D6–U+06ED) and tatweel.
-func isArabicMark(r rune) bool {
-	return (r >= 0x064B && r <= 0x065F) || r == 0x0670 || (r >= 0x06D6 && r <= 0x06ED) || r == 0x0640
+var latinFold = map[rune]rune{
+	'ê': 'e', 'Ê': 'e', 'é': 'e', 'É': 'e', 'è': 'e', 'È': 'e', 'ë': 'e', 'Ë': 'e',
+	'î': 'i', 'Î': 'i', 'í': 'i', 'Í': 'i', 'ì': 'i', 'ï': 'i', 'ı': 'i', 'İ': 'i',
+	'û': 'u', 'Û': 'u', 'ú': 'u', 'Ú': 'u', 'ù': 'u', 'ü': 'u', 'Ü': 'u',
+	'â': 'a', 'Â': 'a', 'á': 'a', 'Á': 'a', 'à': 'a', 'ä': 'a', 'Ä': 'a',
+	'ô': 'o', 'Ô': 'o', 'ó': 'o', 'Ó': 'o', 'ò': 'o', 'ö': 'o', 'Ö': 'o',
+	'ç': 'c', 'Ç': 'c', 'ş': 's', 'Ş': 's', 'ğ': 'g', 'Ğ': 'g',
 }
 
 func asciiLower(s string) string {
