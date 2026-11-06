@@ -82,7 +82,7 @@ Measured shares are given where the inventories have them. An unknown flag stays
 | coauthors | — | **R** (6%) | — | collaborations: unknown |
 | links | attachments **S** (text links come from the spans) | — (captions have none) | — | in the description: **X** |
 | location | check-ins **X** (unconfirmed) | **S** (10%) | unknown (no `poiInfo` seen) | unknown |
-| created_in_country | — | — | `region` **O** | — |
+| created_in_country | — | — | **N**: not in TikTok's web answers (0 of 554 posts measured, 5–6 Nov) | — |
 | reshare | `shared_post` **S** | — | duets and stitches: unknown (none seen in 253 posts) | community re-shares **X** |
 | audio | — | `music` **O** (50%) | `music_id` **A** | Shorts sound: unknown |
 | video.duration | via media **S** | **A** (videos) | **A** | **A** (94%) |

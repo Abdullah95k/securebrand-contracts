@@ -110,7 +110,7 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 - `Relevance`: matched keyword IDs from the shared list, matched rules (`lang-ckb`, `region-IQ`, `phone-964`) and a score.
 - `CollectionScope` on accounts is the registry's decision, not the account's state: full, relevant items only (yts's "mention" channels), profile only (the private second list), or **not monitored** (known only from content: a commenter, a mention, a link target). A private account stays full, and its status says private.
 - `ItemCoverage` on posts: comments collected against reported, the state (complete; partial at a cap; truncated by a wall or an error; not read; disabled) and why. `JobCoverage` per account-level job; a collector with many small jobs adds an hourly roll-up per kind (`job_count`).
-- TikTok's `created_in_country` (where a post was made) is a field of its own: tks found it the strongest Iraq signal.
+- `created_in_country` (where a post was made) is a field of its own, for platforms that say. TikTok's web answers don't carry it after all (tks measured 0 of 554 posts on 5 and 6 Nov), so it stays unset there; tks's Iraq check relies on places, phone numbers and `.iq` links in bios and names, captions, and audience.
 
 ### 8. Media until analysed, then gone
 

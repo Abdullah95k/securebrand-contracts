@@ -39,8 +39,9 @@ message Post {
   // Link attachments and links in the text.
   repeated Link links = 15;
   Location location = 16;
-  // ISO country the post was made in, when the platform says (TikTok
-  // locationCreated): a strong relevance signal.
+  // ISO country the post was made in, when the platform says: a strong
+  // relevance signal where present. TikTok's web answers don't carry it
+  // (tks measured 0 of 554 posts), so tks leaves it unset.
   string created_in_country = 17;
   // The post this one shares, quotes, duets or stitches.
   Reshare reshare = 18;

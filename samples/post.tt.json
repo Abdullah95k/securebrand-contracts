@@ -22,7 +22,6 @@
     ]},
   "hashtags": ["fakeiraq"],
   "mentions": [{"id": "tt:account:7000000000000000002", "handle": "fake_user_2"}],
-  "created_in_country": "IQ",
   "audio": {"audio_id": "tt:audio:7300000000000000001", "title": "original sound - fake_user_1", "original": true},
   "video": {"duration_ms": "15000", "width": 576, "height": 1024},
   "media": [{"media_id": "tt:media:00000000-0000-5000-8000-000000000001", "type": "MEDIA_TYPE_IMAGE", "role": "MEDIA_ROLE_COVER"}],
