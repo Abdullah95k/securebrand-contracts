@@ -1,0 +1,212 @@
+syntax = "proto3";
+
+// securebrand.analysis.v1: what the analysis service (sb-analysis) produces.
+// ClickHouse, the alert engine and the client app read these topics. Ported
+// from sb-analysis's own draft and revised once, before its first
+// registration, to use the contract's IDs and platform codes (sb-analysis's
+// contract review, question 6).
+package securebrand.analysis.v1;
+
+import "google/protobuf/timestamp.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/analysis/v1;analysisv1";
+
+// Provenance records how a result was produced, so results are traceable and
+// re-analysis can be selective.
+message Provenance {
+  // The service and its version (standard E4).
+  string producer = 1;
+  string producer_version = 2;
+  string provider = 3;
+  string model = 4;
+  string prompt_version = 5;
+  string taxonomy_version = 6;
+  string schema_version = 7;
+  // comment, post, image, video, escalation or audit.
+  string route = 8;
+  // batch or realtime.
+  string lane = 9;
+  google.protobuf.Timestamp analyzed_at = 10;
+  // Hex SHA-256 of the analysis input (for media, the file's SHA-256). Equal
+  // hashes are never analysed twice.
+  string input_hash = 11;
+  // Grows with every re-analysis of the same item; consumers keep the
+  // highest.
+  uint32 analysis_version = 12;
+  // current or audit.
+  string purpose = 13;
+  // True when the result came from a route's fallback provider.
+  bool fallback = 14;
+}
+
+message Sentiment {
+  // positive, negative, neutral or mixed.
+  string label = 1;
+  // -1 (very negative) to 1 (very positive).
+  float score = 2;
+  // As reported by the model, 0 to 1.
+  float confidence = 3;
+  // Mapped through the calibration of the model and route, 0 to 1.
+  float calibrated_confidence = 4;
+}
+
+message EntityMention {
+  // The platform's entity ID; empty when the entity isn't in the registry
+  // (yet).
+  string entity_id = 1;
+  // The registry's name, or the words used when unlinked.
+  string name = 2;
+  // brand, product, organization, person_public, place, event,
+  // media_outlet or other.
+  string type = 3;
+  // Sentiment toward this entity (aspect-based).
+  Sentiment sentiment = 4;
+  // What the sentiment is about: price, network, customer_service...
+  string aspect = 5;
+  // text, image or video.
+  string origin = 6;
+}
+
+message Toxicity {
+  // none, mild or severe.
+  string level = 1;
+  bool hate = 2;
+  bool threat = 3;
+  bool harassment = 4;
+}
+
+// ItemAnalysis is one analysis of a post or comment (topic
+// analysis.result.v1, key: the content ID). An item can get a later result
+// (an escalation or an edit): the highest analysis_version wins.
+message ItemAnalysis {
+  string event_id = 1;
+  // The contract ID of the analysed item ("fb:comment:…").
+  string content_id = 2;
+  // A platform code from registry/platforms.yaml.
+  string platform = 3;
+  // post or comment.
+  string kind = 4;
+  // For comments: 0 for a comment on the post, 1 or more for replies.
+  int32 depth = 5;
+  // The post's account, the post, and a reply's direct parent.
+  string account_id = 6;
+  string post_id = 7;
+  string parent_comment_id = 8;
+  // The author's account ID; empty when the platform hides the author.
+  string author_id = 9;
+  // The envelope.version of the item that was analysed, so a result is tied
+  // to the exact version of an edited item.
+  int64 content_version = 10;
+  google.protobuf.Timestamp created_at = 11;
+  // ISO 639 code: ar, ckb, kmr, en...; "none" when there is no language.
+  string lang = 12;
+  // iraqi, gulf, levantine, egyptian, msa, other or none.
+  string dialect = 13;
+  // arabic, latin, mixed or none.
+  string script = 14;
+  bool code_switch = 15;
+  Sentiment sentiment = 16;
+  repeated EntityMention entities = 17;
+  // Taxonomy topic IDs (hierarchical: a sub-topic's ID starts with its
+  // parent's ID and a dot), and "@<entity_id>" for each linked entity the
+  // item is about.
+  repeated string topics = 18;
+  repeated string keywords = 19;
+  string intent = 20;
+  string emotion = 21;
+  Toxicity toxicity = 22;
+  bool spam = 23;
+  bool sarcasm = 24;
+  // The model's judgement that the item needs attention fast.
+  bool urgent = 25;
+  // Private persons mentioned (never stored as entities).
+  int32 private_person_mentions = 26;
+  // True when every provider refused to analyse the item.
+  bool refused = 27;
+  // Advertising: affiliate, own, paid, hidden or sale; empty when the item
+  // is not an ad.
+  string ad_type = 28;
+  // Possible legal or platform-policy breaches, for human review.
+  repeated string legal = 29;
+  // The author's bot level when the item was analysed: empty, suspected,
+  // likely or confirmed. Later changes arrive on analysis.author.v1.
+  string author_bot = 30;
+  // Why it went to its lane: tracked_entity, urgent_source or normal; and the
+  // tracked entities that matched (for the alert engine).
+  string routing = 31;
+  repeated string matched_entity_ids = 32;
+  Provenance provenance = 33;
+}
+
+message Logo {
+  string entity_id = 1;
+  string name = 2;
+  float confidence = 3;
+}
+
+// MediaAnalysis is one analysis of an image or video (topic
+// analysis.media.v1, key: the media ID).
+message MediaAnalysis {
+  string event_id = 1;
+  // The contract's media ID, and the item and account it belongs to.
+  string media_id = 2;
+  string owner_id = 3;
+  string owner_kind = 4;
+  string platform = 5;
+  string account_id = 6;
+  securebrand.content.v1.MediaType type = 7;
+  securebrand.content.v1.MediaRole role = 8;
+  repeated Logo logos = 9;
+  string text_in_image = 10;
+  string description = 11;
+  repeated string labels = 12;
+  int32 people_count = 13;
+  Sentiment sentiment = 14;
+  repeated EntityMention entities = 15;
+  repeated string topics = 16;
+  // What was said in a video.
+  string transcript = 17;
+  string transcript_lang = 18;
+  // Where the transcript came from: platform_captions, or the speech-to-text
+  // model's name.
+  string transcript_source = 19;
+  string ad_type = 20;
+  repeated string legal = 21;
+  Provenance provenance = 22;
+}
+
+// AuthorFlag says an author's bot level changed (topic analysis.author.v1,
+// key: the author's account ID). Every item of the author takes the new
+// level.
+message AuthorFlag {
+  string event_id = 1;
+  string platform = 2;
+  // The author's account ID ("tt:account:…").
+  string author_id = 3;
+  // Empty (no longer flagged), suspected, likely or confirmed (the owner's
+  // decision).
+  string bot = 4;
+  int32 score = 5;
+  // The behaviour behind the score: burst, volume, repetition, coordinated,
+  // network, fast_replies, spam, breadth, no_sleep.
+  repeated string reasons = 6;
+  google.protobuf.Timestamp scored_at = 7;
+}
+
+// TopicUpdate says the topic list changed (topic analysis.topic.v1, key:
+// the topic ID): a topic approved, renamed, merged into another (results
+// carrying it now mean merged_into) or rejected (results carrying it drop
+// it).
+message TopicUpdate {
+  string event_id = 1;
+  string topic_id = 2;
+  string parent_id = 3;
+  string name_en = 4;
+  string name_ar = 5;
+  // active, merged or rejected.
+  string status = 6;
+  string merged_into = 7;
+  string taxonomy_version = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}

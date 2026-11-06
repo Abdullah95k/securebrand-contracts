@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+// securebrand.registry.v1: one way to ask any collector to start, change or
+// pause collecting an account. The platform's account registry gateway
+// publishes these; each collector consumes its platform's requests.
+package securebrand.registry.v1;
+
+import "google/protobuf/timestamp.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/registry/v1;registryv1";
+
+// AccountRequest (topic registry.account_request.v1, key: the platform and
+// account reference).
+message AccountRequest {
+  string event_id = 1;
+  string request_id = 2;
+  string platform = 3;
+  securebrand.content.v1.AccountRef account = 4;
+  Action action = 5;
+  // How often to revisit: client watchlists push their accounts to hot.
+  Tier tier = 6;
+  securebrand.content.v1.CollectionScope scope = 7;
+  // client, discovery, owner, import.
+  string requested_by = 8;
+  // The discovery candidate or client request it came from.
+  string reason = 9;
+  google.protobuf.Timestamp requested_at = 10;
+  // How far back to collect on the first run, in days (0: the collector's
+  // default).
+  int32 backfill_days = 11;
+}
+
+enum Action {
+  ACTION_UNSPECIFIED = 0;
+  ACTION_ADD = 1;
+  ACTION_UPDATE = 2;
+  ACTION_PAUSE = 3;
+  ACTION_RESUME = 4;
+  // Collect once now (an on-demand job).
+  ACTION_COLLECT_NOW = 5;
+}
+
+enum Tier {
+  TIER_UNSPECIFIED = 0;
+  // Minutes: client brands, their competitors, trending accounts.
+  TIER_HOT = 1;
+  // About hourly.
+  TIER_WARM = 2;
+  // Every few hours to daily.
+  TIER_LONG_TAIL = 3;
+  // Rarely: inactive or dormant accounts.
+  TIER_DORMANT = 4;
+}

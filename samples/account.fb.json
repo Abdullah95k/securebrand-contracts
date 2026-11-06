@@ -1,0 +1,28 @@
+{
+  "envelope": {
+    "event_id": "evt-fb-account-0001", "platform": "fb", "kind": "account",
+    "id": "fb:account:100064000000001", "native_id": "100064000000001",
+    "observed_at": "2026-11-06T06:00:00Z", "version": "1794031200000000",
+    "provenance": {"collector": "fbs", "collector_version": "1.4.0", "parser_version": "9",
+      "source_operation": "page_html", "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT", "mode": "CRAWL_MODE_REFRESH"}
+  },
+  "type": "ACCOUNT_TYPE_PAGE",
+  "handle": "fake.brand", "display_name": "Fake Brand Iraq",
+  "url": "https://www.facebook.com/fake.brand",
+  "bio": {"text": "Example bio text"},
+  "links": [
+    {"url": "https://example.com", "domain": "example.com", "source": "LINK_SOURCE_WEBSITE_FIELD"},
+    {"url": "https://www.instagram.com/fake_brand_iq/", "target_platform": "ig", "target_id": "fake_brand_iq", "source": "LINK_SOURCE_ABOUT_PANEL"}
+  ],
+  "contact": {"emails": ["info@example.com"], "phones": ["+964 700 000 0000"], "addresses": ["Example St, Baghdad"]},
+  "categories": ["Shopping & retail"],
+  "verified": true,
+  "is_private": false,
+  "status": {"availability": "AVAILABILITY_VISIBLE"},
+  "scope": "COLLECTION_SCOPE_FULL",
+  "counts": {
+    "followers": {"value": "125000", "exactness": "COUNT_EXACTNESS_ROUNDED", "displayed": "125K followers"},
+    "likes": {"value": "98000", "exactness": "COUNT_EXACTNESS_ROUNDED", "displayed": "98K likes"}
+  },
+  "extras": {"fb.requested_ref": "v:fake.brand"}
+}

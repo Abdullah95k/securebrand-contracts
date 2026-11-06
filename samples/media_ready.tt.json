@@ -1,0 +1,14 @@
+{
+  "event_id": "evt-tt-ready-0001", "platform": "tt",
+  "media_id": "tt:media:00000000-0000-5000-8000-000000000001",
+  "owner_id": "tt:post:7400000000000000001", "owner_kind": "post",
+  "account_id": "tt:account:7000000000000000001",
+  "type": "MEDIA_TYPE_IMAGE", "role": "MEDIA_ROLE_COVER", "variant": "original",
+  "object": {"bucket": "media", "key": "tt/00/00/cover.jpeg", "size_bytes": "430000",
+    "sha256": "aa00000000000000000000000000000000000000000000000000000000000001", "content_type": "image/jpeg"},
+  "width": 576, "height": 1024,
+  "stored_at": "2026-11-06T09:05:00Z",
+  "delete_after": "2026-11-09T09:05:00Z",
+  "required_consumers": ["sb-analysis"],
+  "attempt": 1
+}

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Playlist is an ordered group of an account's posts: a YouTube playlist, an
+// Instagram highlight, a TikTok series or playlist, an album (topic
+// content.playlist.v1, key: the playlist ID).
+message Playlist {
+  Envelope envelope = 1;
+  string account_id = 2;
+  PlaylistType type = 3;
+  Text title = 4;
+  Text description = 5;
+  repeated PlaylistItem items = 6;
+  Count item_count = 7;
+  MediaRef cover = 8;
+  Status status = 9;
+  string url = 10;
+  google.protobuf.Struct extras = 99;
+}
+
+enum PlaylistType {
+  PLAYLIST_TYPE_UNSPECIFIED = 0;
+  PLAYLIST_TYPE_PLAYLIST = 1;
+  PLAYLIST_TYPE_HIGHLIGHT = 2;
+  PLAYLIST_TYPE_SERIES = 3;
+  PLAYLIST_TYPE_ALBUM = 4;
+}
+
+message PlaylistItem {
+  string post_id = 1;
+  int32 position = 2;
+  Time added_at = 3;
+  // Removal is recorded, never deleted.
+  Status status = 4;
+}

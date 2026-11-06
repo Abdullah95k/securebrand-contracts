@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/comment.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Messages defined now so later collection needs no redesign. No collector
+// publishes them yet.
+
+// LiveChatMessage is one message in a live stream's chat (topic
+// content.live_chat.v1, key: the live post's ID). Too high-volume to be a
+// comment.
+message LiveChatMessage {
+  Envelope envelope = 1;
+  // The live post.
+  string post_id = 2;
+  Author author = 3;
+  Text text = 4;
+  Time published_at = 5;
+  // Paid messages (Super Chat and similar): amount and currency as shown.
+  string paid_amount = 6;
+  string paid_currency = 7;
+  google.protobuf.Struct extras = 99;
+}
+
+// Transcript is a platform-provided transcript or caption track of a video,
+// with timing (topic content.transcript.v1, key: the post ID). Speech-to-text
+// made by analysis is an analysis result, not this.
+message Transcript {
+  Envelope envelope = 1;
+  string post_id = 2;
+  string language = 3;
+  bool auto_generated = 4;
+  repeated TranscriptSegment segments = 5;
+  google.protobuf.Struct extras = 99;
+}
+
+message TranscriptSegment {
+  int64 start_ms = 1;
+  int64 end_ms = 2;
+  string text = 3;
+}

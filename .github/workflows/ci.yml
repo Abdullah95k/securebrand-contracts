@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Install buf and protoc-gen-go (pinned)
+        run: |
+          go install github.com/bufbuild/buf/cmd/buf@v1.45.0
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Lint and build the protos
+        run: |
+          buf lint
+          buf build
+      - name: Generated code is up to date
+        run: |
+          buf generate
+          git diff --exit-code -- gen/
+      - name: No breaking change since the latest v1 tag (fields are only added from v1.0.0 on)
+        run: |
+          tag="$(git tag -l 'v1.*' --sort=-v:refname | head -n 1)"
+          if [ -z "$tag" ]; then
+            echo "No v1 tag yet: the draft may still change before v1.0.0."
+          else
+            buf breaking --against ".git#tag=${tag}"
+          fi
+      - name: Vet and test (conformance checks and samples)
+        run: |
+          gofmt -l . | tee /dev/stderr | (! read)
+          go vet ./...
+          go test -race ./...

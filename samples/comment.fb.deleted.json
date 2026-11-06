@@ -1,0 +1,13 @@
+{
+  "envelope": {
+    "event_id": "evt-fb-comment-del-0001", "platform": "fb", "kind": "comment",
+    "id": "fb:comment:100000000000101", "native_id": "100000000000101",
+    "observed_at": "2026-11-13T09:00:00Z", "version": "1794646800000000", "partial": true,
+    "provenance": {"collector": "fbs", "collector_version": "1.4.0", "parser_version": "9",
+      "source_operation": "comments", "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT", "mode": "CRAWL_MODE_RECRAWL"}
+  },
+  "post_id": "fb:post:100000000000001",
+  "account_id": "fb:account:100064000000001",
+  "depth": 0,
+  "status": {"availability": "AVAILABILITY_DELETED", "reason": "missing from a complete re-read", "since": "2026-11-13T09:00:00Z"}
+}

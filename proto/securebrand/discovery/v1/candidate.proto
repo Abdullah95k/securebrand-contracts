@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+// securebrand.discovery.v1: the one hand-off format for accounts any
+// discovery source finds, on any platform, for any platform's collector.
+package securebrand.discovery.v1;
+
+import "google/protobuf/timestamp.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/discovery/v1;discoveryv1";
+
+// Candidate is an account a discovery source found, with its evidence and,
+// once checked, the outcome (topic discovery.candidate.v1, key: the target
+// platform and account reference). A source publishes it when found; the
+// target platform's collector publishes it again with the outcome.
+//
+// No caps in production (owner D-008): the outcome CAPPED appears only in
+// tests and the canary.
+message Candidate {
+  string event_id = 1;
+  // The platform whose collector should check it.
+  string target_platform = 2;
+  // As far as known: the ID, handle or URL.
+  securebrand.content.v1.AccountRef account = 3;
+  google.protobuf.Timestamp found_at = 4;
+  // The collector or tool that found it: fbs, igs, tks, yts, igdisc, client,
+  // owner.
+  string found_by = 5;
+  // Where it was found, when that is another platform (a YouTube About-panel
+  // link to a Facebook page).
+  string source_platform = 6;
+  Source source = 7;
+  repeated Evidence evidence = 8;
+  // The Iraq-relevance check: score, matched keywords and rules.
+  securebrand.content.v1.Relevance relevance = 9;
+  optional bool is_private = 10;
+  Outcome outcome = 11;
+  // private, inactive, never_posted, banned, gone, unreadable, not_relevant.
+  string outcome_reason = 12;
+  // What the collector will collect: full, relevant only (yts "mention"),
+  // profile only (the private second list).
+  securebrand.content.v1.CollectionScope scope = 13;
+  google.protobuf.Timestamp decided_at = 14;
+  securebrand.content.v1.Provenance provenance = 15;
+}
+
+enum Source {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_KEYWORD_SEARCH = 1;
+  // Search through a platform's official API (keep its terms: no API fields,
+  // IDs only).
+  SOURCE_OFFICIAL_API_SEARCH = 2;
+  SOURCE_MENTION = 3;
+  SOURCE_TAG = 4;
+  SOURCE_COAUTHOR = 5;
+  SOURCE_COMMENTER = 6;
+  SOURCE_SHARE = 7;
+  SOURCE_LINK_IN_CONTENT = 8;
+  // A link in another account's bio, website field or About panel.
+  SOURCE_PROFILE_LINK = 9;
+  SOURCE_FOLLOWERS = 10;
+  SOURCE_FOLLOWING = 11;
+  SOURCE_HASHTAG_PAGE = 12;
+  SOURCE_AUDIO_PAGE = 13;
+  SOURCE_RELATED = 14;
+  SOURCE_GRAPH = 15;
+  SOURCE_CLIENT_REQUEST = 16;
+  SOURCE_IMPORT = 17;
+}
+
+message Evidence {
+  string keyword_id = 1;
+  string keyword = 2;
+  string language = 3;
+  // The content that mentioned, tagged or linked it.
+  string content_id = 4;
+  string url = 5;
+  // How often, and by how many of our accounts, it was seen.
+  int64 sightings = 6;
+  int64 distinct_sources = 7;
+  string via = 8;
+}
+
+enum Outcome {
+  OUTCOME_UNSPECIFIED = 0;
+  OUTCOME_PENDING = 1;
+  OUTCOME_ADDED = 2;
+  OUTCOME_ALREADY_LISTED = 3;
+  // Private: the owner's second list.
+  OUTCOME_SECOND_LIST = 4;
+  // Kept, checked less often (inactive, never posted, banned, gone).
+  OUTCOME_DORMANT = 5;
+  OUTCOME_NOT_RELEVANT = 6;
+  OUTCOME_UNAVAILABLE = 7;
+  // Added with scope "relevant only".
+  OUTCOME_ADDED_RELEVANT_ONLY = 8;
+  // Tests and the canary only (owner D-008).
+  OUTCOME_CAPPED = 9;
+  // Removed by the owner; never added.
+  OUTCOME_EXCLUDED = 10;
+}

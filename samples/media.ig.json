@@ -1,0 +1,21 @@
+{
+  "envelope": {
+    "event_id": "evt-ig-media-0001", "platform": "ig", "kind": "media",
+    "id": "ig:media:00000000-0000-5000-8000-000000000001", "native_id": "00000000-0000-5000-8000-000000000001",
+    "observed_at": "2026-11-06T09:00:00Z", "version": "1794042000000000",
+    "provenance": {"collector": "igs", "collector_version": "0.12.0", "parser_version": "21",
+      "source_operation": "post_page", "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT"}
+  },
+  "owner_id": "ig:post:3000000000000000001",
+  "owner_kind": "post",
+  "type": "MEDIA_TYPE_IMAGE",
+  "role": "MEDIA_ROLE_CONTENT",
+  "platform_kind": "carousel_child",
+  "variant": "original",
+  "position": 1,
+  "platform_media_id": "3000000000000000002",
+  "source_url": "https://cdn.example.invalid/fake.jpg?oe=6A1B2C3D",
+  "source_expires_at": "2026-11-09T00:00:00Z",
+  "width": 1080, "height": 1350,
+  "alt_text": "Photo of example scene"
+}

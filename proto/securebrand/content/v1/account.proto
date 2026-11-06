@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package securebrand.content.v1;
+
+import "google/protobuf/struct.proto";
+import "securebrand/content/v1/common.proto";
+
+option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1;contentv1";
+
+// Account is a page, profile or channel (topic content.account.v1, key: the
+// account ID). A new version when anything but counts changes.
+message Account {
+  Envelope envelope = 1;
+  AccountType type = 2;
+  // Handle, vanity or username now. It can change; the ID never does.
+  string handle = 3;
+  string display_name = 4;
+  string url = 5;
+  // Other IDs the platform uses for the same account (TikTok "sec_uid").
+  map<string, string> alt_ids = 6;
+  // The bio, intro or channel description.
+  Text bio = 7;
+  // Every website, bio link, About-panel link and linked account: what
+  // entity linking needs, captured from day one.
+  repeated Link links = 8;
+  Contact contact = 9;
+  repeated string categories = 10;
+  optional bool verified = 11;
+  optional bool is_private = 12;
+  // A business, creator or organization account, when the platform says.
+  optional bool is_business = 13;
+  // The country the account states, as shown, and as an ISO code when it can
+  // be derived.
+  string stated_country = 14;
+  string stated_country_code = 15;
+  // The account's language setting, as the platform states it (BCP 47).
+  string platform_language = 16;
+  Location location = 17;
+  // When the account was created (YouTube "Joined", TikTok createTime).
+  Time created_at = 18;
+  // When the handle or the display name last changed, if the platform says.
+  Time handle_changed_at = 19;
+  Time name_changed_at = 20;
+  MediaRef picture = 21;
+  MediaRef cover = 22;
+  // The account's own keyword field (YouTube channel keywords).
+  repeated string keywords = 23;
+  Status status = 24;
+  CollectionScope scope = 25;
+  // The counts read with this observation, if any. The series is on
+  // content.account_snapshot.v1.
+  AccountCounts counts = 26;
+  Relevance relevance = 27;
+  // Platform-only fields, keys "<platform>.<name>" (registry/extras.yaml).
+  google.protobuf.Struct extras = 99;
+}
+
+message Contact {
+  repeated string emails = 1;
+  repeated string phones = 2;
+  repeated string addresses = 3;
+}
+
+message AccountCounts {
+  // Followers or subscribers.
+  Count followers = 1;
+  Count following = 2;
+  // Posts or videos.
+  Count posts = 3;
+  // Page likes (Facebook), likes received (TikTok "hearts").
+  Count likes = 4;
+  // Total views (YouTube).
+  Count views = 5;
+  // Likes the account gave (TikTok).
+  Count likes_given = 6;
+  Count friends = 7;
+  map<string, Count> other = 8;
+}
+
+// AccountSnapshot is one observation of an account's counts and flags
+// (topic content.account_snapshot.v1, key: the account ID). Envelope.id is
+// the account's ID.
+message AccountSnapshot {
+  Envelope envelope = 1;
+  AccountCounts counts = 2;
+  optional bool verified = 3;
+  optional bool is_private = 4;
+  // The names at that time.
+  string handle = 5;
+  string display_name = 6;
+  Status status = 7;
+  google.protobuf.Struct extras = 99;
+}
