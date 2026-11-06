@@ -2,6 +2,10 @@
 
 All notable changes to the contract. Fields are only ever added; a breaking change is a new major version.
 
+## Unreleased (documentation only)
+
+- `created_in_country`: TikTok's web answers don't carry the post's country after all (tks measured 0 of 584 posts on 5 and 6 Nov), so tks leaves it unset. The field stays for platforms that give it. README, field matrix, the field's comment and the TikTok post sample corrected. No schema change.
+
 ## v1.0.0, 6 November 2026
 
 Approved by the owner (decision D-016). The content of draft v0.2, unchanged, plus `contracts.Version` (`"1.0.0"`), the value collectors put in the `sb-contract` header. From here on, fields are only added; CI checks every change against this tag.
