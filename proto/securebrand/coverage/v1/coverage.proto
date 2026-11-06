@@ -10,7 +10,9 @@ import "securebrand/content/v1/common.proto";
 option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/coverage/v1;coveragev1";
 
 // JobCoverage is published once per finished job (topic
-// collection.coverage.v1, key: the job ID).
+// collection.coverage.v1, key: the job ID). A collector with many small jobs
+// publishes one per account-level job, and an hourly roll-up per kind for the
+// rest: job_count says how many jobs it covers, and the window is the hour.
 message JobCoverage {
   string event_id = 1;
   string platform = 2;
@@ -32,6 +34,8 @@ message JobCoverage {
   Completeness completeness = 14;
   repeated Reason reasons = 15;
   securebrand.content.v1.Provenance provenance = 16;
+  // How many jobs this event covers: 1 for a single job, more for a roll-up.
+  int64 job_count = 17;
 }
 
 enum JobKind {

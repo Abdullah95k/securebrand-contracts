@@ -9,5 +9,6 @@
   "width": 576, "height": 1024,
   "stored_at": "2026-11-06T09:05:00Z",
   "delete_after": "2026-11-09T09:05:00Z",
-  "required_consumers": ["sb-analysis"]
+  "required_consumers": ["sb-analysis"],
+  "attempt": 1
 }

@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: securebrand/content/v1/common.proto
 
-// securebrand.content.v1: the unified content contract (draft v0.1).
+// securebrand.content.v1: the unified content contract (draft v0.2).
 //
 // Every collector maps its platform data into these messages, and every
 // consumer (storage, analysis, alerts, the client app) reads only these.
@@ -15,8 +15,11 @@
 //   - Text is kept exactly as received (UTF-8, NFC). Consumers compute any
 //     normalized form for matching.
 //   - Times are UTC, each with its precision.
+//   - Estimates are full values marked as estimates (owner D-013): "1.2K"
+//     is 1200 with exactness ROUNDED; "a week ago" is that day with
+//     precision WEEK. A field a platform doesn't give stays unset.
 //   - IDs are text: "<platform>:<kind>:<native id>". The kind is the entity
-//     kind (account, post, comment, media, audio, collection), never a
+//     kind (account, post, comment, media, audio, playlist), never a
 //     subtype, so re-classifying a reel or a reply never changes an ID.
 //   - Platform codes come from registry/platforms.yaml. Adding a
 //     platform adds a code there and a mapping; no message changes.
@@ -235,9 +238,10 @@ type CountExactness int32
 const (
 	CountExactness_COUNT_EXACTNESS_UNSPECIFIED CountExactness = 0
 	CountExactness_COUNT_EXACTNESS_EXACT       CountExactness = 1
-	// Rounded or abbreviated by the platform; value is the lower bound.
+	// Rounded or abbreviated by the platform: an estimate. The value is the
+	// full number as shown; the platform's rounding direction may be unknown.
 	CountExactness_COUNT_EXACTNESS_ROUNDED CountExactness = 2
-	// At least this many (a capped or partial reading).
+	// At least this many ("99+", or a capped or partial reading).
 	CountExactness_COUNT_EXACTNESS_LOWER_BOUND CountExactness = 3
 )
 
@@ -523,12 +527,16 @@ type Availability int32
 const (
 	Availability_AVAILABILITY_UNSPECIFIED Availability = 0
 	Availability_AVAILABILITY_VISIBLE     Availability = 1
-	// Can't be read now; the platform doesn't say why.
+	// Can't be read now, and the platform doesn't say why (deleted, private
+	// and removed look alike logged out). The platform's code or text goes in
+	// Status.reason.
 	Availability_AVAILABILITY_UNAVAILABLE Availability = 2
-	Availability_AVAILABILITY_PRIVATE     Availability = 3
+	// The platform says it's private.
+	Availability_AVAILABILITY_PRIVATE Availability = 3
 	// Shown only to logged-in viewers (by age, country or login wall).
 	Availability_AVAILABILITY_RESTRICTED Availability = 4
-	// Gone, as far as a logged-out reader can tell. The text is kept.
+	// The platform says it was deleted, or a comment is absent from a complete
+	// re-read. The text is kept.
 	Availability_AVAILABILITY_DELETED Availability = 5
 	Availability_AVAILABILITY_BANNED  Availability = 6
 )
@@ -709,7 +717,9 @@ func (MediaRole) EnumDescriptor() ([]byte, []int) {
 	return file_securebrand_content_v1_common_proto_rawDescGZIP(), []int{10}
 }
 
-// CollectionScope says how much of an account is collected.
+// CollectionScope says how much of an account is collected. It is the
+// registry's decision, not the account's state: a private account stays
+// FULL, and its status says it's private.
 type CollectionScope int32
 
 const (
@@ -720,6 +730,9 @@ const (
 	CollectionScope_COLLECTION_SCOPE_RELEVANT_ONLY CollectionScope = 2
 	// The profile only (private accounts: the second list).
 	CollectionScope_COLLECTION_SCOPE_PROFILE_ONLY CollectionScope = 3
+	// Known only from content (a commenter, a mention, a link target): its
+	// profile is read now and then, and its posts aren't collected.
+	CollectionScope_COLLECTION_SCOPE_NOT_MONITORED CollectionScope = 4
 )
 
 // Enum value maps for CollectionScope.
@@ -729,12 +742,14 @@ var (
 		1: "COLLECTION_SCOPE_FULL",
 		2: "COLLECTION_SCOPE_RELEVANT_ONLY",
 		3: "COLLECTION_SCOPE_PROFILE_ONLY",
+		4: "COLLECTION_SCOPE_NOT_MONITORED",
 	}
 	CollectionScope_value = map[string]int32{
 		"COLLECTION_SCOPE_UNSPECIFIED":   0,
 		"COLLECTION_SCOPE_FULL":          1,
 		"COLLECTION_SCOPE_RELEVANT_ONLY": 2,
 		"COLLECTION_SCOPE_PROFILE_ONLY":  3,
+		"COLLECTION_SCOPE_NOT_MONITORED": 4,
 	}
 )
 
@@ -779,7 +794,7 @@ type Envelope struct {
 	// li, sc and others as they are added).
 	Platform string `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
 	// The message kind: account, account_snapshot, post, comment, metrics,
-	// media, audio, collection, live_chat_message, transcript.
+	// media, audio, playlist, live_chat_message, transcript.
 	Kind string `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
 	// The entity this event is about, "<platform>:<entity kind>:<native id>".
 	// For a snapshot it is the account's ID; for metrics, the target's ID.
@@ -924,8 +939,10 @@ type Provenance struct {
 	Mode        CrawlMode   `protobuf:"varint,8,opt,name=mode,proto3,enum=securebrand.content.v1.CrawlMode" json:"mode,omitempty"`
 	// Where the raw response is kept ("s3://bucket/key#line"), if it is.
 	RawRef string `protobuf:"bytes,9,opt,name=raw_ref,json=rawRef,proto3" json:"raw_ref,omitempty"`
-	// ISO 3166-1 alpha-2 country of the exit that read it. Platforms serve
-	// different data by country.
+	// ISO 3166-1 alpha-2 country the platform placed the reader in: the region
+	// the platform reports for the request when it does (TikTok's page
+	// region), else the exit's configured country. Set on every event when
+	// known: platforms serve different data by country.
 	ExitCountry string `protobuf:"bytes,10,opt,name=exit_country,json=exitCountry,proto3" json:"exit_country,omitempty"`
 	// Set when the source's terms require deletion or refresh by a date (for
 	// example official YouTube Data API data: 30 days). Storage applies it.
@@ -1042,6 +1059,14 @@ func (x *Provenance) GetTermsExpireAt() *timestamppb.Timestamp {
 // Time is a moment with its precision. Platforms often show only "3 days
 // ago"; the estimate is kept with how precise it is, and a later, more
 // precise reading replaces it.
+//
+// The rule for estimates (owner D-013): `at` is worked out from the
+// observation time and set to the start of its unit. Minutes and hours
+// ("5 minutes ago", "3 hours ago"): the start of that minute or hour. Days,
+// weeks, months and years ("2 days ago", "1 week ago", "1 month ago",
+// "1 year ago", or a date with no time): 00:00 Iraq time (Asia/Baghdad,
+// UTC+3) of that day, which is 21:00 UTC the evening before. A time worked
+// out from an ID gets the precision the ID gives (Instagram pk: MINUTE).
 type Time struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1111,8 +1136,9 @@ type Count struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The value, or the lower bound when rounded ("1.2K" → 1200). Unset when
-	// hidden.
+	// The full number ("1.2K" → 1200, "1M" → 1000000, "10M" → 10000000).
+	// exactness says whether it's exact or an estimate. Unset when hidden or
+	// not shown.
 	Value     *int64         `protobuf:"varint,1,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	Exactness CountExactness `protobuf:"varint,2,opt,name=exactness,proto3,enum=securebrand.content.v1.CountExactness" json:"exactness,omitempty"`
 	// As shown ("1.2K", "1,2 ألف"), when it was abbreviated or text.
@@ -2407,7 +2433,7 @@ var file_securebrand_content_v1_common_proto_rawDesc = []byte{
 	0x52, 0x10, 0x05, 0x12, 0x19, 0x0a, 0x15, 0x4d, 0x45, 0x44, 0x49, 0x41, 0x5f, 0x52, 0x4f, 0x4c,
 	0x45, 0x5f, 0x41, 0x54, 0x54, 0x41, 0x43, 0x48, 0x4d, 0x45, 0x4e, 0x54, 0x10, 0x06, 0x12, 0x1a,
 	0x0a, 0x16, 0x4d, 0x45, 0x44, 0x49, 0x41, 0x5f, 0x52, 0x4f, 0x4c, 0x45, 0x5f, 0x41, 0x55, 0x44,
-	0x49, 0x4f, 0x5f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x10, 0x07, 0x2a, 0x95, 0x01, 0x0a, 0x0f, 0x43,
+	0x49, 0x4f, 0x5f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x10, 0x07, 0x2a, 0xb9, 0x01, 0x0a, 0x0f, 0x43,
 	0x6f, 0x6c, 0x6c, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x63, 0x6f, 0x70, 0x65, 0x12, 0x20,
 	0x0a, 0x1c, 0x43, 0x4f, 0x4c, 0x4c, 0x45, 0x43, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x43, 0x4f,
 	0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00,
@@ -2417,13 +2443,15 @@ var file_securebrand_content_v1_common_proto_rawDesc = []byte{
 	0x52, 0x45, 0x4c, 0x45, 0x56, 0x41, 0x4e, 0x54, 0x5f, 0x4f, 0x4e, 0x4c, 0x59, 0x10, 0x02, 0x12,
 	0x21, 0x0a, 0x1d, 0x43, 0x4f, 0x4c, 0x4c, 0x45, 0x43, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x43,
 	0x4f, 0x50, 0x45, 0x5f, 0x50, 0x52, 0x4f, 0x46, 0x49, 0x4c, 0x45, 0x5f, 0x4f, 0x4e, 0x4c, 0x59,
-	0x10, 0x03, 0x42, 0x56, 0x5a, 0x54, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
-	0x2f, 0x61, 0x62, 0x64, 0x75, 0x6c, 0x6c, 0x61, 0x68, 0x39, 0x35, 0x6b, 0x2f, 0x73, 0x65, 0x63,
-	0x75, 0x72, 0x65, 0x62, 0x72, 0x61, 0x6e, 0x64, 0x2d, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63,
-	0x74, 0x73, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x67, 0x6f, 0x2f, 0x73, 0x65, 0x63, 0x75, 0x72, 0x65,
-	0x62, 0x72, 0x61, 0x6e, 0x64, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x2f, 0x76, 0x31,
-	0x3b, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x10, 0x03, 0x12, 0x22, 0x0a, 0x1e, 0x43, 0x4f, 0x4c, 0x4c, 0x45, 0x43, 0x54, 0x49, 0x4f, 0x4e,
+	0x5f, 0x53, 0x43, 0x4f, 0x50, 0x45, 0x5f, 0x4e, 0x4f, 0x54, 0x5f, 0x4d, 0x4f, 0x4e, 0x49, 0x54,
+	0x4f, 0x52, 0x45, 0x44, 0x10, 0x04, 0x42, 0x56, 0x5a, 0x54, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x61, 0x62, 0x64, 0x75, 0x6c, 0x6c, 0x61, 0x68, 0x39, 0x35, 0x6b,
+	0x2f, 0x73, 0x65, 0x63, 0x75, 0x72, 0x65, 0x62, 0x72, 0x61, 0x6e, 0x64, 0x2d, 0x63, 0x6f, 0x6e,
+	0x74, 0x72, 0x61, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x67, 0x6f, 0x2f, 0x73, 0x65,
+	0x63, 0x75, 0x72, 0x65, 0x62, 0x72, 0x61, 0x6e, 0x64, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e,
+	0x74, 0x2f, 0x76, 0x31, 0x3b, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x76, 0x31, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (

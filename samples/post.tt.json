@@ -9,6 +9,8 @@
       "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT", "mode": "CRAWL_MODE_INCREMENTAL", "exit_country": "US"}
   },
   "account_id": "tt:account:7000000000000000001",
+  "account": {"id": "tt:account:7000000000000000001", "handle": "fake_user_1", "display_name": "Example Name",
+    "alt_ids": {"sec_uid": "MS4wLjABAAAAfakeSecUid0001"}, "type": "ACCOUNT_TYPE_ORGANIZATION", "verified": true},
   "type": "POST_TYPE_SHORT_VIDEO", "subtype": "video",
   "url": "https://www.tiktok.com/@fake_user_1/video/7400000000000000001",
   "published_at": {"at": "2026-11-06T08:30:00Z", "precision": "TIME_PRECISION_EXACT"},
@@ -26,8 +28,9 @@
   "media": [{"media_id": "tt:media:00000000-0000-5000-8000-000000000001", "type": "MEDIA_TYPE_IMAGE", "role": "MEDIA_ROLE_COVER"}],
   "labels": {"ai_generated": false, "ad": false},
   "flags": {"pinned": false, "comments_disabled": false},
+  "category": "112",
   "counts": {
-    "views": {"value": "12500", "exactness": "COUNT_EXACTNESS_ROUNDED", "displayed": "12.5K"},
+    "views": {"value": "12500", "exactness": "COUNT_EXACTNESS_ROUNDED"},
     "likes": {"value": "830", "exactness": "COUNT_EXACTNESS_EXACT"},
     "comments": {"value": "41", "exactness": "COUNT_EXACTNESS_EXACT"},
     "shares": {"value": "9", "exactness": "COUNT_EXACTNESS_EXACT"},
@@ -36,5 +39,5 @@
   "status": {"availability": "AVAILABILITY_VISIBLE"},
   "relevance": {"relevant": true, "matched_rules": ["region-IQ"]},
   "coverage": {"comments_state": "COMMENTS_STATE_COMPLETE", "comments_collected": "40", "comments_reported": "41", "completeness": 0.98},
-  "extras": {"tt.category_code": 112}
+  "captions": [{"language": "ar", "source": "CAPTION_SOURCE_PLATFORM_ASR", "text": "example subtitle text"}]
 }

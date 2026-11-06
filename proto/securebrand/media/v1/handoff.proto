@@ -18,8 +18,8 @@ message MediaReady {
   string platform = 2;
   // The content.media.v1 record's ID.
   string media_id = 3;
-  // The post, comment, account or audio it belongs to, and that item's
-  // account.
+  // The post, comment, account, audio or playlist it belongs to, and that
+  // item's account.
   string owner_id = 4;
   string owner_kind = 5;
   string account_id = 6;
@@ -33,11 +33,17 @@ message MediaReady {
   string alt_text = 14;
   google.protobuf.Timestamp stored_at = 15;
   // The file is deleted at this time even without every acknowledgement.
-  // Analysis works nearest deadline first.
+  // At least 24 hours after stored_at; producers default to 72 hours, from a
+  // setting the owner can change. Analysis works nearest deadline first.
   google.protobuf.Timestamp delete_after = 16;
-  // The consumers that must acknowledge before the file may be deleted.
+  // The consumers that must acknowledge before the file may be deleted:
+  // names from registry/platforms.yaml (consumers), such as "sb-analysis".
   repeated string required_consumers = 17;
   securebrand.content.v1.Provenance provenance = 18;
+  // 1 for the first announcement. After FAILED_RETRYABLE the producer
+  // announces the file again, at most 3 times, so a consumer can tell a
+  // retry from a duplicate.
+  int32 attempt = 19;
 }
 
 message StorageObject {
@@ -57,12 +63,16 @@ message StorageObject {
 message MediaProcessed {
   string event_id = 1;
   string media_id = 2;
-  // sb-analysis, or another required consumer.
+  // A registered consumer name (registry/platforms.yaml), such as
+  // "sb-analysis".
   string consumer = 3;
   ProcessStatus status = 4;
   google.protobuf.Timestamp processed_at = 5;
   string error = 6;
   string platform = 7;
+  // Why it was skipped or failed, as a short code ("policy:sticker",
+  // "too_large", "undecodable"); error holds the details.
+  string reason = 8;
 }
 
 enum ProcessStatus {

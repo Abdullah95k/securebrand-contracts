@@ -1,6 +1,9 @@
 # Documented extras keys: platform-only fields with no shared field yet.
 # A key used by two or more platforms is promoted to a real field in a
-# minor release. Keys are "<platform>.<name>".
+# minor release. Keys are "<platform>.<name>". Removed in v0.2 because a
+# shared field holds them: tt.status_code (Status.reason), tt.category_code
+# (Post.category), yt.member_badge (Author.badges), yt.live_status_raw
+# (VideoInfo.live_status).
 extras:
   fb:
     - {key: fb.story_id, on: post, meaning: "GraphQL story ID, to re-read"}
@@ -17,20 +20,22 @@ extras:
     - {key: ig.pronouns, on: account, meaning: "pronouns as shown"}
     - {key: ig.highlight_count, on: account, meaning: "number of highlights"}
     - {key: ig.requested_ref, on: account, meaning: "u:username or id:pk"}
+    - {key: ig.latest_story_at, on: account, meaning: "time of the account's newest story: a cheap activity signal"}
+    - {key: ig.threads_badge, on: account, meaning: "Instagram's hint that a Threads account exists"}
   tt:
     - {key: tt.bio_link_risk, on: account, meaning: "TikTok's risk value for the bio link"}
     - {key: tt.following_visibility, on: account, meaning: "1 shown, 2 hidden"}
-    - {key: tt.category_code, on: post, meaning: "TikTok CategoryType"}
     - {key: tt.aigc_label_type, on: post, meaning: "AI label type code"}
     - {key: tt.anchors, on: post, meaning: "product, place and effect anchors, raw"}
-    - {key: tt.status_code, on: post, meaning: "the post page's statusCode when unavailable"}
     - {key: tt.discovered_via, on: post, meaning: "list, or others reserved"}
     - {key: tt.stick_position, on: comment, meaning: "pin position"}
     - {key: tt.comment_labels, on: comment, meaning: "label_list texts"}
     - {key: tt.predicted_age_group, on: comment, meaning: "TikTok's inferred age band of the author (owner decision 1 Nov; normal data, D-003)"}
   yt:
-    - {key: yt.live_status_raw, on: post, meaning: "none, upcoming, live, was_live as read"}
     - {key: yt.player_unavailable, on: post, meaning: "tags and category couldn't be read"}
     - {key: yt.playability_status, on: post, meaning: "the player's status (login required, unplayable)"}
     - {key: yt.source, on: post, meaning: "how yts first saw it: web, tab, rss, websub, web_search, api_search"}
-    - {key: yt.member_badge, on: comment, meaning: "channel membership badge as shown"}
+    - {key: yt.family_safe, on: account, meaning: "the channel's family-safe flag"}
+    - {key: yt.tier, on: account, meaning: "yts's own tier, A to D or M (not the platform's tiers)"}
+    - {key: yt.added_by, on: account, meaning: "seed, admin, discovery or enrichment"}
+    - {key: yt.added_reason, on: account, meaning: "why the channel was added"}

@@ -1,6 +1,6 @@
-# The SecureBrand unified contract (draft v0.1)
+# The SecureBrand unified contract (draft v0.2)
 
-**Status:** draft for review, 6 November 2026 (Iraq time). Every collector session reviews its own mapping, and the owner approves **v1.0.0**. Until v1.0.0 is tagged, **nothing is registered in any shared Schema Registry**.
+**Status:** draft v0.2, 6 November 2026 (Iraq time). Every service reviewed its mapping to v0.1 (REQ-012 to REQ-016), and v0.2 takes in those reviews ([`CHANGELOG.md`](CHANGELOG.md)). The owner approves **v1.0.0**. Until v1.0.0 is tagged, **nothing is registered in any shared Schema Registry**.
 
 ## What it is
 
@@ -13,7 +13,10 @@ It was built from every collector's field inventory and contract notes (fbs, igs
 - **D-004:** every processed record, every version of it, and every analysis result are kept forever. Raw platform responses: failures and a 1% sample forever, the rest for 30 days.
 - **D-008:** no discovery caps in production.
 - **D-010:** what analysis sends to its AI provider excludes phone numbers, e-mails and author names. That's a rule for analysis, not a field rule here.
-- **R5:** media files are kept only until their analysis is complete.
+- **D-013:** estimates are stored as full values and marked as estimates: "1.2K" is 1,200, and "a week ago" is that day at 00:00 Iraq time (section 4).
+- **D-014:** TikTok's own subtitles are collected (after v1.0.0).
+- **D-015:** TikTok's age band for commenters is normal data (`tt.predicted_age_group`).
+- **R5:** media files are kept only until their analysis is complete, and at least 24 hours (section 8).
 
 ## What's here
 
@@ -24,6 +27,7 @@ It was built from every collector's field inventory and contract notes (fbs, igs
 | `proto/securebrand/discovery/v1/` | Candidate: the one hand-off for accounts any discovery source finds |
 | `proto/securebrand/coverage/v1/` | JobCoverage: what each job did and didn't get, and why |
 | `proto/securebrand/registry/v1/` | AccountRequest: one way to ask any collector to add, change or pause an account |
+| `proto/securebrand/analysis/v1/` | What analysis produces: ItemAnalysis, MediaAnalysis, AuthorFlag, TopicUpdate |
 | `proto/securebrand/lifecycle/v1/` | Erasure: **dormant**, published only on the owner's written order |
 | `registry/` | Platform codes, topics and documented `extras` keys |
 | `gen/go/` | Go code generated from `proto/` (`buf generate`) |
@@ -75,10 +79,14 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 
 ### 4. Nothing is lost, and nothing is guessed
 
-- **Absent is not zero.** A count the platform didn't show is left unset. Every count is a `Count` that says whether it is exact or rounded ("1.2K", with the text kept) and whether the owner hid it (Instagram likes, YouTube subscribers).
-- **Every time carries its precision.** 61% of YouTube comment times are only "a year ago". `Time` keeps the estimate, its precision and the text shown, and a later, more precise reading replaces it.
+- **Absent is not zero.** A count the platform didn't show is left unset, and so is a flag the platform doesn't give (Instagram's business flag, `ai_generated` without a label). "Not known" is never written as 0 or false.
+- **Estimates are full values, marked as estimates (owner D-013).**
+  - **Counts:** the full number ("1.2K" → 1,200; "1M" → 1,000,000; "10M" → 10,000,000) with `exactness`: `EXACT`, `ROUNDED` (an estimate: the platform rounded or abbreviated it, direction unknown), or `LOWER_BOUND` ("99+"). The text shown is kept in `displayed`. A hidden count has no value and `hidden = true`.
+  - **Times:** "5 minutes ago" and "3 hours ago" become the start of that minute or hour. "2 days ago", "1 week ago", "1 month ago", "1 year ago" and a date with no time become **that day at 00:00 Iraq time** (21:00 UTC the evening before). `precision` says how rough it is (61% of YouTube comment times are only "a year ago"), `displayed` keeps the text, and a later, more precise reading replaces it as a new version. A time worked out from an ID gets the ID's precision (Instagram: `MINUTE`).
+  - Storage derives a yes/no `is_estimate` column from these marks.
 - **Text exactly as received,** with mentions, hashtags and links as positioned spans. The offset unit is stated, because Facebook and TikTok count UTF-16 units.
-- **Edits and deletions are new versions,** never overwrites. A deletion is a partial event with the status `DELETED`; storage keeps the earlier text forever (owner D-004).
+- **Edits and deletions are new versions,** never overwrites. A deletion is a partial event with its status; storage keeps the earlier text forever (owner D-004).
+- **Availability says only what the platform says:** `DELETED` when the platform says deleted, or when a comment is absent from a complete re-read; `PRIVATE` when it says private; `UNAVAILABLE` when it doesn't say why, with its code or text in `reason`. A comment that comes back is a new `VISIBLE` version.
 - **Unknown platform fields are kept** in `extras`, under documented keys (`registry/extras.yaml`). A key two platforms use is promoted to a real field.
 - **Raw responses** are pointed to by `provenance.raw_ref`: failures and a 1% sample kept forever, the rest for 30 days (owner D-004).
 
@@ -86,6 +94,7 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 
 - Every author, mention, tag, co-author and share owner is an `AccountRef`, with its account ID. On every platform a commenter is an account, so commenters become accounts too (yts's point), and the entity layer can link them across platforms.
 - Accounts carry every link: websites, bio links, About-panel links, and accounts the platform links (Instagram's linked Facebook page, with its ID). Each link says which platform and account it points to.
+- A post carries its account as it was when seen (`Post.account`: ID, handle, display name, type, verified), and its author when that isn't the account (`Post.author`). A comment carries its own link (`Comment.url`) when the platform has one.
 - Author IDs and names are normal fields (owner D-003). `author_key` is gone: the account ID does its job. What analysis sends to its AI provider is a separate rule (D-010).
 
 ### 6. Counts: one structure everywhere
@@ -99,13 +108,13 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 ### 7. Why an item was collected, and how completely
 
 - `Relevance`: matched keyword IDs from the shared list, matched rules (`lang-ckb`, `region-IQ`, `phone-964`) and a score.
-- `CollectionScope` on accounts: full, relevant items only (yts's "mention" channels), or profile only (the private second list).
-- `ItemCoverage` on posts: comments collected against reported, the state (complete, partial, truncated, not read) and why. `JobCoverage` per job.
+- `CollectionScope` on accounts is the registry's decision, not the account's state: full, relevant items only (yts's "mention" channels), profile only (the private second list), or **not monitored** (known only from content: a commenter, a mention, a link target). A private account stays full, and its status says private.
+- `ItemCoverage` on posts: comments collected against reported, the state (complete; partial at a cap; truncated by a wall or an error; not read; disabled) and why. `JobCoverage` per account-level job; a collector with many small jobs adds an hourly roll-up per kind (`job_count`).
 - TikTok's `created_in_country` (where a post was made) is a field of its own: tks found it the strongest Iraq signal.
 
 ### 8. Media until analysed, then gone
 
-`MediaReady` names the file, its owner and its account, its storage object (with SHA-256, and a perceptual hash so the same picture can be matched across platforms after the file is gone), and a hard `delete_after` deadline. It also lists the consumers that must acknowledge it. `MediaProcessed` is each consumer's acknowledgement, and `MediaDeleted` records the deletion. The Media record itself stays forever. This replaces fbs's `fb.media.*` and the clashing `common.v1` copies in igs and tks.
+`MediaReady` names the file, its owner (a post, comment, account, audio or playlist) and its account, its storage object (with SHA-256, and a perceptual hash so the same picture can be matched across platforms after the file is gone), and a hard `delete_after` deadline: **at least 24 hours** after the file is stored, **72 hours by default**. It lists the consumers that must acknowledge it, by their registered names (`sb-analysis`, in `registry/platforms.yaml`). After a retryable failure the producer announces the file again, **at most 3 times**, and `attempt` counts the announcements. `MediaProcessed` is each consumer's acknowledgement (with a short `reason` when skipped or failed), and `MediaDeleted` records the deletion. The Media record itself stays forever. This replaces fbs's `fb.media.*` and the clashing `common.v1` copies in igs and tks.
 
 ### 9. Discovery, one format for every platform
 
@@ -113,9 +122,9 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 - the platform whose collector should check the account, and the platform it was found on;
 - how it was found: keyword search, official API search, mention, tag, co-author, commenter, share, link in content, profile link, followers, following, hashtag or audio page, related, graph, client request, import;
 - the evidence and the Iraq-relevance check;
-- the outcome: added, added for relevant items only, already listed, **second list** (private), dormant (with a reason), not relevant, unavailable.
+- the outcome: added, added for relevant items only, already listed, **second list** (private), dormant (with a reason), not relevant, unavailable, **excluded** (removed by the owner).
 
-**No caps in production** (owner D-008): the outcome `CAPPED` exists for tests and staging only, and the conformance check rejects it in production. Official-API search results carry IDs only, never the API's fields (the YouTube terms). A link found on one platform becomes a candidate for another, which is how new Facebook pages will be found.
+**No caps in production** (owner D-008): the outcome `CAPPED` exists for tests and the canary only, and the conformance check rejects it in production. **Official-API data never reaches `content.*`:** official-API search results appear only as candidates, with IDs, never the API's fields (the YouTube terms). The first `content.post` for such a video comes from our own reading of its page. A link found on one platform becomes a candidate for another, which is how new Facebook pages will be found.
 
 ### 10. Asking collectors for accounts
 
@@ -129,6 +138,10 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 - **Retention on Kafka is 7 days.** The permanent copy is ClickHouse plus the event archive in object storage.
 - **The platform topics stay** (`fb.*`, `ig.*`, `tt.*`, `yt.*`) alongside `content.*`, as the standard (E2) says.
 
+### 12. What analysis produces
+
+`securebrand.analysis.v1` is part of the contract, because ClickHouse, the alert engine and the client app read it. `ItemAnalysis` (topic `analysis.result.v1`) carries the item's contract IDs (content, account, post, parent, author), the version of the item that was analysed, sentiment, entities, topics, intent, risk labels, the bot level, and why it went to the real-time lane (for the alert engine). `MediaAnalysis`, `AuthorFlag` (keyed by the author's account ID) and `TopicUpdate` complete it. The highest `analysis_version` of an item wins.
+
 ## The rules collectors follow
 
 1. Only add fields; never rename, renumber or remove. A breaking change is a new major version (`content.post.v2`), run in parallel during migration.
@@ -138,29 +151,35 @@ Posts and comments are separate (the owner's decision), and counts are separate 
    | Platform value | Contract |
    |---|---|
    | Facebook status, photo, album, link, share, event | `POST_TYPE_POST`, with the subtype |
-   | Facebook video; YouTube video | `POST_TYPE_VIDEO` |
+   | Instagram photo; carousel | `POST_TYPE_POST`, subtype `photo`; subtype `carousel` |
+   | Facebook video; YouTube video; Instagram non-reel video (feed or IGTV) | `POST_TYPE_VIDEO` (Instagram subtype `video` or `igtv`) |
    | Facebook and Instagram reels, YouTube Shorts, TikTok videos | `POST_TYPE_SHORT_VIDEO` |
    | TikTok photo posts | `POST_TYPE_POST`, subtype `photo` |
-   | Live streams | `POST_TYPE_LIVE`, with `video.live_status` |
-   | Instagram highlight items | `POST_TYPE_STORY`, subtype `highlight`, plus a `Playlist` of type highlight |
-   | YouTube community posts | `POST_TYPE_COMMUNITY` |
+   | Live streams | `POST_TYPE_LIVE`, with `video.live_status` (Facebook can't tell live from ended: unset). A stream keeps its ID from upcoming to ended. |
+   | Instagram highlight items | `POST_TYPE_STORY`, subtype `highlight`, plus a `Playlist` of type highlight; a 24-hour story, if collected: subtype `story` |
+   | YouTube community posts | `POST_TYPE_COMMUNITY`; an attached video is a link, a re-shared post a `Reshare` |
+   | A YouTube video's description | `description` (`text` is for community posts and captions) |
    | Replies on YouTube (one level) | depth 1, parent = root = the thread |
    | Replies on TikTok | root = `reply_id`; parent = `reply_to_reply_id`, else the root |
    | Facebook replies (to depth 3) | parent, root and depth as Facebook gives them |
    | Instagram replies | none logged out: `ItemCoverage.replies_available = false` |
+   | Account type | Facebook: page, person or unspecified by fbs's own page read; a `User`-typed author or mention is unspecified. Instagram: unspecified. TikTok: organization when it says so, else unspecified. YouTube: channel. |
+   | Facebook comment reads | stopped at the per-post cap: `PARTIAL`; stopped by a wall or an error: `TRUNCATED` |
+   | Instagram's linked Facebook page | a link with `LINK_SOURCE_LINKED_ACCOUNT`, `target_platform = fb`, the page ID, and `url` built as `https://www.facebook.com/<page id>` |
+   | TikTok subtitles | `Post.captions`, `source = CAPTION_SOURCE_PLATFORM_ASR` or `MACHINE_TRANSLATION` |
 
 4. **Fields a platform doesn't have stay unset.** "Not available logged out" is never a zero or a false.
 5. **Deletion** is a partial event with `status.availability = DELETED` and `status.since`. It never blanks stored text.
 
 ## Adopting it, per service (after v1.0.0)
 
-| Service | How | Estimate (its own) |
+| Service | How | Estimate (its own, after reviewing v0.1) |
 |---|---|---|
-| fbs | An emitter writes `content.*` in the same Kafka batch as `fb.*` | 1–2 weeks |
-| igs | Update its normalizer, and delete its own `securebrand.content.v1` | 7–8 days |
-| tks | A small mapper from `tt.*` to `content.*`. Move the shared types off its `securebrand.common.v1`. | One milestone |
-| yts | The relay publishes `yt.*` and `content.*` in one Kafka transaction | 3–4 days, after the outbox |
-| analysis | Read `content.post`, `content.comment` and `content.media.ready` into its own internal item. Delete its own `securebrand.content.v1`. | 1–2 days |
+| fbs | An emitter writes `content.*` in the same Kafka batch as `fb.*` | about 12–15 days |
+| igs | Update its normalizer, and delete its own `securebrand.content.v1` | about 11–14 days |
+| tks | Emit `content.*` from its persister, which knows when a row changed. Move the shared types off its `securebrand.common.v1`. | about 5–7 days, plus subtitles |
+| yts | The outbox and relay publish `yt.*` and `content.*` in one Kafka transaction | about 4–5 weeks, including new fields |
+| analysis | Read `content.post`, `content.comment` and `content.media.ready` into its own internal item; publish `securebrand.analysis.v1` from here. Delete its own `securebrand.content.v1`. | about 6–7 days |
 
 igs and analysis must delete their local `securebrand.content.v1` when they adopt it, because two packages of that name can't be linked into one program. The contract deliberately doesn't use the name `securebrand.common.v1`, which igs and tks define differently, so their platform topics keep working while they move over.
 
@@ -169,11 +188,10 @@ igs and analysis must delete their local `securebrand.content.v1` when they adop
 Each collector session confirms its mapping, and the owner decides the points marked **owner**.
 
 1. **Shared keyword list:** where it lives (a file in this repository, or a small platform service). The seed is fbs's `iraq.yaml`. **Owner**, with the master.
-2. **tks:** `predicted_age_group` rides as the documented extras key `tt.predicted_age_group`, as normal data (D-003). **Owner** to confirm.
-3. **fbs:** `likes` as the reaction total on Facebook (section 6). fbs to confirm.
-4. **igs:** account counts move from `content.metrics` with `target = account` to `content.account_snapshot`. igs agreed in its notes.
-5. **yts:** official-API search hits never appear as `content.*`, only as `discovery.candidate` with IDs (section 9). yts proposed this.
-6. **analysis:** whether `author_key` can be replaced by the author's account ID in its bot detection. analysis to confirm.
+2. **Instagram highlight items** are published only after one real read-only check shows logged-out Instagram serves them (igs).
+3. **v1.0.0:** the **owner** approves this draft as v1.0.0. Then the platform registers the subjects, and each service adopts it in its own request.
+
+Closed in v0.2: `predicted_age_group` is normal data (D-015); Facebook `likes` is the reaction total (fbs agreed; the client app labels it "reactions" on Facebook); igs's account counts move to snapshots (igs agreed); official-API hits stay out of `content.*` (yts); bot detection keys on the author's account ID (analysis agreed).
 
 ## Changelog
 

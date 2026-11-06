@@ -22,6 +22,8 @@ message Post {
   string url = 5;
   Time published_at = 6;
   Text title = 7;
+  // The post's own text: captions, community post text. A YouTube video's
+  // description goes in description, not here.
   Text text = 8;
   Text description = 9;
   // Hashtags, without "#".
@@ -62,6 +64,13 @@ message Post {
   ItemCoverage coverage = 31;
   // Captions or subtitles the platform provides, when collected.
   repeated CaptionTrack captions = 32;
+  // The account as it was when the post was seen: ID, handle, display name,
+  // type and verified mark. account_id stays the key.
+  AccountRef account = 33;
+  // Who wrote it, set only when that isn't the account (another page or
+  // person posting on a Facebook page; later, group members or channel
+  // signatures).
+  AccountRef author = 34;
   google.protobuf.Struct extras = 99;
 }
 
@@ -118,6 +127,9 @@ message VideoInfo {
   optional bool has_audio = 6;
   optional int32 width = 7;
   optional int32 height = 8;
+  // When a live stream actually started and ended.
+  Time live_started_at = 9;
+  Time live_ended_at = 10;
 }
 
 enum LiveStatus {
@@ -168,10 +180,21 @@ message PollOption {
 }
 
 message CaptionTrack {
+  reserved 2;
+  reserved "auto_generated";
   string language = 1;
-  // The platform generated it automatically.
-  bool auto_generated = 2;
   string text = 3;
+  // Who made it: the uploader, the platform's speech-to-text, or a machine
+  // translation.
+  CaptionSource source = 4;
+}
+
+enum CaptionSource {
+  CAPTION_SOURCE_UNSPECIFIED = 0;
+  CAPTION_SOURCE_UPLOADER = 1;
+  // The platform's speech-to-text (YouTube automatic captions, TikTok ASR).
+  CAPTION_SOURCE_PLATFORM_ASR = 2;
+  CAPTION_SOURCE_MACHINE_TRANSLATION = 3;
 }
 
 // ItemCoverage says how completely an item's comments were collected, and

@@ -29,3 +29,13 @@ message_kinds:
   playlist: [playlist]
   live_chat_message: [live_chat]
   transcript: [post]
+
+# The entity kinds a media file can belong to (Media.owner_kind and
+# MediaReady.owner_kind).
+media_owner_kinds: [post, comment, account, audio, playlist]
+
+# Consumers that acknowledge media files (MediaReady.required_consumers and
+# MediaProcessed.consumer). Producers set these names when they adopt the
+# contract.
+consumers:
+  - {name: sb-analysis, service: sb-analysis, acknowledges: content.media.ready.v1}

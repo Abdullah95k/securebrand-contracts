@@ -5,10 +5,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	analysisv1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/analysis/v1"
 	contentv1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1"
 	discoveryv1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/discovery/v1"
 	mediav1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/media/v1"
@@ -27,6 +30,8 @@ var check = map[string]struct {
 	"media":            {func() proto.Message { return &contentv1.Media{} }, func(m proto.Message, o Options) error { return Media(m.(*contentv1.Media), o) }},
 	"media_ready":      {func() proto.Message { return &mediav1.MediaReady{} }, func(m proto.Message, o Options) error { return MediaReady(m.(*mediav1.MediaReady), o) }},
 	"candidate":        {func() proto.Message { return &discoveryv1.Candidate{} }, func(m proto.Message, o Options) error { return Candidate(m.(*discoveryv1.Candidate), o) }},
+	"playlist":         {func() proto.Message { return &contentv1.Playlist{} }, func(m proto.Message, o Options) error { return Playlist(m.(*contentv1.Playlist), o) }},
+	"item_analysis":    {func() proto.Message { return &analysisv1.ItemAnalysis{} }, func(m proto.Message, o Options) error { return ItemAnalysis(m.(*analysisv1.ItemAnalysis), o) }},
 }
 
 func load(t *testing.T, path string) (proto.Message, func(proto.Message, Options) error) {
@@ -105,6 +110,39 @@ func TestRulesCatchMistakes(t *testing.T) {
 		{"discovery cap in production", "candidate.yt-to-fb.json", "not allowed in production", func(m proto.Message) {
 			m.(*discoveryv1.Candidate).Outcome = discoveryv1.Outcome_OUTCOME_CAPPED
 		}},
+		{"day estimate not at Iraq midnight", "comment.yt.json", "isn't 00:00 Iraq time", func(m proto.Message) {
+			m.(*contentv1.Comment).PublishedAt.At = timestamppb.New(time.Date(2026, 11, 3, 9, 0, 0, 0, time.UTC))
+		}},
+		{"hour estimate not at the hour", "comment.yt.json", "start of an hour", func(m proto.Message) {
+			c := m.(*contentv1.Comment)
+			c.PublishedAt.Precision = contentv1.TimePrecision_TIME_PRECISION_HOUR
+			c.PublishedAt.At = timestamppb.New(time.Date(2026, 11, 6, 7, 15, 0, 0, time.UTC))
+		}},
+		{"count without an estimate mark", "metrics.fb.json", "no exactness", func(m proto.Message) {
+			m.(*contentv1.Metrics).Counts.Reactions["love"].Exactness = contentv1.CountExactness_COUNT_EXACTNESS_UNSPECIFIED
+		}},
+		{"post account differs from account_id", "post.tt.json", "differs from account_id", func(m proto.Message) {
+			m.(*contentv1.Post).Account.Id = "tt:account:7000000000000000999"
+		}},
+		{"media kept under 24 hours", "media_ready.tt.json", "less than 24 hours", func(m proto.Message) {
+			r := m.(*mediav1.MediaReady)
+			r.DeleteAfter = timestamppb.New(r.StoredAt.AsTime().Add(6 * time.Hour))
+		}},
+		{"unregistered media consumer", "media_ready.tt.json", "not in the registry's consumers", func(m proto.Message) {
+			m.(*mediav1.MediaReady).RequiredConsumers = []string{"analysis"}
+		}},
+		{"media owner kind mismatch", "media_ready.tt.json", "differs from owner_id's kind", func(m proto.Message) {
+			m.(*mediav1.MediaReady).OwnerKind = "playlist"
+		}},
+		{"playlist item that isn't a post", "playlist.yt.json", "want post", func(m proto.Message) {
+			m.(*contentv1.Playlist).Items[0].PostId = "yt:comment:Ugzfake"
+		}},
+		{"analysis result without the analysed version", "item_analysis.fb.json", "content_version", func(m proto.Message) {
+			m.(*analysisv1.ItemAnalysis).ContentVersion = 0
+		}},
+		{"analysis result kind mismatch", "item_analysis.fb.json", "differs from content_id's kind", func(m proto.Message) {
+			m.(*analysisv1.ItemAnalysis).Kind = "post"
+		}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -118,12 +156,12 @@ func TestRulesCatchMistakes(t *testing.T) {
 	}
 }
 
-// A capped discovery outcome is fine outside production (tests, staging,
-// the canary).
+// A capped discovery outcome is fine outside production (tests and the
+// canary).
 func TestCapAllowedOutsideProduction(t *testing.T) {
 	m, fn := load(t, "../samples/candidate.yt-to-fb.json")
 	m.(*discoveryv1.Candidate).Outcome = discoveryv1.Outcome_OUTCOME_CAPPED
 	if err := fn(m, Options{Production: false}); err != nil {
-		t.Fatalf("staging should allow CAPPED: %v", err)
+		t.Fatalf("tests and the canary should allow CAPPED: %v", err)
 	}
 }

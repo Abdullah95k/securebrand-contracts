@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-// securebrand.content.v1: the unified content contract (draft v0.1).
+// securebrand.content.v1: the unified content contract (draft v0.2).
 //
 // Every collector maps its platform data into these messages, and every
 // consumer (storage, analysis, alerts, the client app) reads only these.
@@ -11,8 +11,11 @@ syntax = "proto3";
 //   - Text is kept exactly as received (UTF-8, NFC). Consumers compute any
 //     normalized form for matching.
 //   - Times are UTC, each with its precision.
+//   - Estimates are full values marked as estimates (owner D-013): "1.2K"
+//     is 1200 with exactness ROUNDED; "a week ago" is that day with
+//     precision WEEK. A field a platform doesn't give stays unset.
 //   - IDs are text: "<platform>:<kind>:<native id>". The kind is the entity
-//     kind (account, post, comment, media, audio, collection), never a
+//     kind (account, post, comment, media, audio, playlist), never a
 //     subtype, so re-classifying a reel or a reply never changes an ID.
 //   - Platform codes come from registry/platforms.yaml. Adding a
 //     platform adds a code there and a mapping; no message changes.
@@ -35,7 +38,7 @@ message Envelope {
   // li, sc and others as they are added).
   string platform = 2;
   // The message kind: account, account_snapshot, post, comment, metrics,
-  // media, audio, collection, live_chat_message, transcript.
+  // media, audio, playlist, live_chat_message, transcript.
   string kind = 3;
   // The entity this event is about, "<platform>:<entity kind>:<native id>".
   // For a snapshot it is the account's ID; for metrics, the target's ID.
@@ -76,8 +79,10 @@ message Provenance {
   CrawlMode mode = 8;
   // Where the raw response is kept ("s3://bucket/key#line"), if it is.
   string raw_ref = 9;
-  // ISO 3166-1 alpha-2 country of the exit that read it. Platforms serve
-  // different data by country.
+  // ISO 3166-1 alpha-2 country the platform placed the reader in: the region
+  // the platform reports for the request when it does (TikTok's page
+  // region), else the exit's configured country. Set on every event when
+  // known: platforms serve different data by country.
   string exit_country = 10;
   // Set when the source's terms require deletion or refresh by a date (for
   // example official YouTube Data API data: 30 days). Storage applies it.
@@ -112,6 +117,14 @@ enum CrawlMode {
 // Time is a moment with its precision. Platforms often show only "3 days
 // ago"; the estimate is kept with how precise it is, and a later, more
 // precise reading replaces it.
+//
+// The rule for estimates (owner D-013): `at` is worked out from the
+// observation time and set to the start of its unit. Minutes and hours
+// ("5 minutes ago", "3 hours ago"): the start of that minute or hour. Days,
+// weeks, months and years ("2 days ago", "1 week ago", "1 month ago",
+// "1 year ago", or a date with no time): 00:00 Iraq time (Asia/Baghdad,
+// UTC+3) of that day, which is 21:00 UTC the evening before. A time worked
+// out from an ID gets the precision the ID gives (Instagram pk: MINUTE).
 message Time {
   google.protobuf.Timestamp at = 1;
   TimePrecision precision = 2;
@@ -133,8 +146,9 @@ enum TimePrecision {
 // Count is one number as the platform showed it. An unset Count means
 // unknown or not shown; it is never written as zero.
 message Count {
-  // The value, or the lower bound when rounded ("1.2K" → 1200). Unset when
-  // hidden.
+  // The full number ("1.2K" → 1200, "1M" → 1000000, "10M" → 10000000).
+  // exactness says whether it's exact or an estimate. Unset when hidden or
+  // not shown.
   optional int64 value = 1;
   CountExactness exactness = 2;
   // As shown ("1.2K", "1,2 ألف"), when it was abbreviated or text.
@@ -146,9 +160,10 @@ message Count {
 enum CountExactness {
   COUNT_EXACTNESS_UNSPECIFIED = 0;
   COUNT_EXACTNESS_EXACT = 1;
-  // Rounded or abbreviated by the platform; value is the lower bound.
+  // Rounded or abbreviated by the platform: an estimate. The value is the
+  // full number as shown; the platform's rounding direction may be unknown.
   COUNT_EXACTNESS_ROUNDED = 2;
-  // At least this many (a capped or partial reading).
+  // At least this many ("99+", or a capped or partial reading).
   COUNT_EXACTNESS_LOWER_BOUND = 3;
 }
 
@@ -299,12 +314,16 @@ message Status {
 enum Availability {
   AVAILABILITY_UNSPECIFIED = 0;
   AVAILABILITY_VISIBLE = 1;
-  // Can't be read now; the platform doesn't say why.
+  // Can't be read now, and the platform doesn't say why (deleted, private
+  // and removed look alike logged out). The platform's code or text goes in
+  // Status.reason.
   AVAILABILITY_UNAVAILABLE = 2;
+  // The platform says it's private.
   AVAILABILITY_PRIVATE = 3;
   // Shown only to logged-in viewers (by age, country or login wall).
   AVAILABILITY_RESTRICTED = 4;
-  // Gone, as far as a logged-out reader can tell. The text is kept.
+  // The platform says it was deleted, or a comment is absent from a complete
+  // re-read. The text is kept.
   AVAILABILITY_DELETED = 5;
   AVAILABILITY_BANNED = 6;
 }
@@ -351,7 +370,9 @@ enum MediaRole {
   MEDIA_ROLE_AUDIO_COVER = 7;
 }
 
-// CollectionScope says how much of an account is collected.
+// CollectionScope says how much of an account is collected. It is the
+// registry's decision, not the account's state: a private account stays
+// FULL, and its status says it's private.
 enum CollectionScope {
   COLLECTION_SCOPE_UNSPECIFIED = 0;
   // Everything the account publishes.
@@ -360,4 +381,7 @@ enum CollectionScope {
   COLLECTION_SCOPE_RELEVANT_ONLY = 2;
   // The profile only (private accounts: the second list).
   COLLECTION_SCOPE_PROFILE_ONLY = 3;
+  // Known only from content (a commenter, a mention, a link target): its
+  // profile is read now and then, and its posts aren't collected.
+  COLLECTION_SCOPE_NOT_MONITORED = 4;
 }

@@ -26,5 +26,7 @@ message Audio {
   string url = 11;
   // How many posts use it, when the platform shows it.
   Count uses = 12;
+  // Whether it can be heard: platforms remove or mute sounds for copyright.
+  Status status = 13;
   google.protobuf.Struct extras = 99;
 }

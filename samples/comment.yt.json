@@ -16,8 +16,9 @@
     "badges": [{"kind": "member", "detail": "Member (2 years)"}]
   },
   "text": {"text": "@fake_user_2 example reply text"},
-  "published_at": {"at": "2026-11-03T09:00:00Z", "precision": "TIME_PRECISION_DAY", "displayed": "3 days ago"},
+  "published_at": {"at": "2026-11-02T21:00:00Z", "precision": "TIME_PRECISION_DAY", "displayed": "3 days ago"},
   "flags": {"by_post_owner": false, "pinned": false, "liked_by_creator": true, "edited": false},
   "counts": {"likes": {"value": "15", "exactness": "COUNT_EXACTNESS_EXACT"}},
-  "status": {"availability": "AVAILABILITY_VISIBLE"}
+  "status": {"availability": "AVAILABILITY_VISIBLE"},
+  "url": "https://www.youtube.com/watch?v=fakeVid0001&lc=UgzFAKE00000000000001.FAKEreply01"
 }

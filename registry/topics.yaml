@@ -22,4 +22,8 @@ topics:
   - {topic: discovery.candidate.v1,      type: securebrand.discovery.v1.Candidate,      key: "target platform + account reference"}
   - {topic: collection.coverage.v1,      type: securebrand.coverage.v1.JobCoverage,     key: job id}
   - {topic: registry.account_request.v1, type: securebrand.registry.v1.AccountRequest,  key: "platform + account reference"}
+  - {topic: analysis.result.v1,          type: securebrand.analysis.v1.ItemAnalysis,    key: content id}
+  - {topic: analysis.media.v1,           type: securebrand.analysis.v1.MediaAnalysis,   key: media id}
+  - {topic: analysis.author.v1,          type: securebrand.analysis.v1.AuthorFlag,      key: author account id}
+  - {topic: analysis.topic.v1,           type: securebrand.analysis.v1.TopicUpdate,     key: topic id}
   - {topic: lifecycle.erasure.v1,        type: securebrand.lifecycle.v1.Erasure,        key: subject id, status: dormant}

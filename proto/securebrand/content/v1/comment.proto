@@ -36,6 +36,9 @@ message Comment {
   Engagement counts = 13;
   Status status = 14;
   Relevance relevance = 15;
+  // The comment's own link, when the platform has one (Facebook comment
+  // URLs, YouTube "&lc=" links).
+  string url = 16;
   google.protobuf.Struct extras = 99;
 }
 

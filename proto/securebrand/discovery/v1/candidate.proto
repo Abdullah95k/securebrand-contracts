@@ -15,7 +15,7 @@ option go_package = "github.com/abdullah95k/securebrand-contracts/gen/go/secureb
 // target platform's collector publishes it again with the outcome.
 //
 // No caps in production (owner D-008): the outcome CAPPED appears only in
-// tests, staging and the canary.
+// tests and the canary.
 message Candidate {
   string event_id = 1;
   // The platform whose collector should check it.
@@ -94,6 +94,8 @@ enum Outcome {
   OUTCOME_UNAVAILABLE = 7;
   // Added with scope "relevant only".
   OUTCOME_ADDED_RELEVANT_ONLY = 8;
-  // Tests, staging and the canary only.
+  // Tests and the canary only (owner D-008).
   OUTCOME_CAPPED = 9;
+  // Removed by the owner; never added.
+  OUTCOME_EXCLUDED = 10;
 }

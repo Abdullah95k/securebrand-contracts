@@ -1,0 +1,21 @@
+{
+  "envelope": {
+    "event_id": "evt-yt-playlist-0001", "platform": "yt", "kind": "playlist",
+    "id": "yt:playlist:PLfake0000000000000001", "native_id": "PLfake0000000000000001",
+    "observed_at": "2026-11-06T09:00:00Z", "version": "1794042000000000",
+    "provenance": {"collector": "yts", "collector_version": "1.0.0", "parser_version": "4",
+      "source_operation": "browse", "source_variant": "playlist", "acquisition": "ACQUISITION_SCRAPED_LOGGED_OUT", "mode": "CRAWL_MODE_REFRESH"}
+  },
+  "account_id": "yt:account:UCfake0000000000000001",
+  "type": "PLAYLIST_TYPE_PLAYLIST",
+  "title": {"text": "Example playlist"},
+  "items": [
+    {"post_id": "yt:post:fakeVid0000", "position": 0},
+    {"post_id": "yt:post:fakeVid000x", "position": 1,
+     "status": {"availability": "AVAILABILITY_UNAVAILABLE", "reason": "removed_from_playlist", "since": "2026-11-02T06:10:00Z"}},
+    {"post_id": "yt:post:fakeVid0001", "position": 2}
+  ],
+  "item_count": {"value": "24", "exactness": "COUNT_EXACTNESS_EXACT"},
+  "status": {"availability": "AVAILABILITY_VISIBLE"},
+  "url": "https://www.youtube.com/playlist?list=PLfake0000000000000001"
+}
