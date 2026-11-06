@@ -5,3 +5,5 @@ go 1.24
 require google.golang.org/protobuf v1.35.2
 
 require gopkg.in/yaml.v3 v3.0.1
+
+require golang.org/x/text v0.21.0

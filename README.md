@@ -109,7 +109,7 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 
 ### 7. Why an item was collected, and how completely
 
-- `Relevance`: matched keyword IDs from the shared list, matched rules (`lang-ckb`, `region-IQ`, `phone-964`) and a score.
+- `Relevance`: matched keyword IDs from the shared list, matched rules (`lang-ckb`, `region-IQ`, `phone-964`) and a score. A keyword's ID is `contracts.KeywordID(group, language, spelling)`, for example `baghdad:ar:بغداد`: the spelling is folded the same way everywhere (NFKC, lower case, Arabic diacritics and tatweel removed, hamza and madda alefs to bare alef, ة to ه, ى and ی to ي, ک to ك, Kurdish letters kept), so the same word has the same ID in every service, with no central counter.
 - `CollectionScope` on accounts is the registry's decision, not the account's state: full, relevant items only (yts's "mention" channels), profile only (the private second list), or **not monitored** (known only from content: a commenter, a mention, a link target). A private account stays full, and its status says private.
 - `ItemCoverage` on posts: comments collected against reported, the state (complete; partial at a cap; truncated by a wall or an error; not read; disabled) and why. `JobCoverage` per account-level job; a collector with many small jobs adds an hourly roll-up per kind (`job_count`).
 - `created_in_country` (where a post was made) is a field of its own, for platforms that say. TikTok's web answers don't carry it after all (tks measured 0 of 584 posts on 5 and 6 Nov), so it stays unset there; tks's Iraq check relies on places, phone numbers and `.iq` links in bios and names, captions, and audience.
@@ -122,11 +122,11 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 
 `Candidate` carries:
 - the platform whose collector should check the account, and the platform it was found on;
-- how it was found: keyword search, official API search, mention, tag, co-author, commenter, share, link in content, profile link, followers, following, hashtag or audio page, related, graph, client request, import;
-- the evidence and the Iraq-relevance check;
+- how it was found: keyword search, official API search, mention, tag, co-author, commenter, share, link in content, profile link, followers, following, hashtag, audio or location page, related, graph, client request, import;
+- the evidence (the keyword, the content it was seen in, and since v1.1.0 when that content was made) and the Iraq-relevance check;
 - the outcome: added, added for relevant items only, already listed, **second list** (private), dormant (with a reason), not relevant, unavailable, **excluded** (removed by the owner).
 
-**No caps in production** (owner D-008): the outcome `CAPPED` exists for tests and the canary only, and the conformance check rejects it in production. **Official-API data never reaches `content.*`:** official-API search results appear only as candidates, with IDs, never the API's fields (the YouTube terms). The first `content.post` for such a video comes from our own reading of its page. A link found on one platform becomes a candidate for another, which is how new Facebook pages will be found.
+**No caps in production** (owner D-008): the outcome `CAPPED` exists for tests and the canary only, and the conformance check rejects it in production. A collector's canary runs in production (D-012), so it checks with `Options{Production: true, Canary: true}` until its full run starts. **Official-API data never reaches `content.*`:** official-API search results appear only as candidates, with IDs, never the API's fields (the YouTube terms). The first `content.post` for such a video comes from our own reading of its page. A link found on one platform becomes a candidate for another, which is how new Facebook pages will be found.
 
 ### 10. Asking collectors for accounts
 
@@ -189,7 +189,7 @@ igs and analysis must delete their local `securebrand.content.v1` when they adop
 
 Each collector session confirms its mapping, and the owner decides the points marked **owner**.
 
-1. **Shared keyword list:** where it lives (a file in this repository, or a small platform service). The seed is fbs's `iraq.yaml`. **Owner**, with the master.
+1. **Shared keyword list:** where it lives (a file in this repository, or a small platform service). The seed is fbs's `iraq.yaml`. **Owner**, with the master. Its IDs are settled: `contracts.KeywordID` (v1.1.0).
 2. **Instagram highlight items** are published only after one real read-only check shows logged-out Instagram serves them (igs).
 3. **Adoption:** each service adopts v1.0.0 in its own request from the owner, and the platform registers the subjects once production is up.
 

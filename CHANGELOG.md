@@ -2,8 +2,15 @@
 
 All notable changes to the contract. Fields are only ever added; a breaking change is a new major version.
 
-## Unreleased (documentation only)
+## v1.1.0, 6 November 2026
 
+Additions only; every v1.0.0 record is still valid. From the Instagram discovery session's plan (its C1, C2 and K2), decided by the master (D-025, D-027).
+
+- `discovery.v1.Source.SOURCE_LOCATION_PAGE` (18): an account found on a place's page.
+- `discovery.v1.Evidence.content_time` (9, a `content.v1.Time`): when the matching post or comment was made. The estimate rule (D-013) applies, and conformance checks it.
+- `contracts.KeywordID(group, language, spelling)` and `contracts.FoldKeyword`: one ID per keyword in every service, `<group>:<language>:<folded spelling>`, with no central counter. Conformance checks `Evidence.keyword_id` against it.
+- `conformance.Options.Canary`: allows the `CAPPED` outcome in production while a collector's canary runs (owner D-012). Nothing else changes.
+- The module now needs `golang.org/x/text` (Unicode normalisation for keyword IDs).
 - `created_in_country`: TikTok's web answers don't carry the post's country after all (tks measured 0 of 584 posts on 5 and 6 Nov), so tks leaves it unset. The field stays for platforms that give it. README, field matrix, the field's comment and the TikTok post sample corrected. No schema change.
 
 ## v1.0.0, 6 November 2026

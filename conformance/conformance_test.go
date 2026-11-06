@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	contracts "github.com/abdullah95k/securebrand-contracts"
 	analysisv1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/analysis/v1"
 	contentv1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/content/v1"
 	discoveryv1 "github.com/abdullah95k/securebrand-contracts/gen/go/securebrand/discovery/v1"
@@ -113,6 +114,16 @@ func TestRulesCatchMistakes(t *testing.T) {
 		{"day estimate not at Iraq midnight", "comment.yt.json", "isn't 00:00 Iraq time", func(m proto.Message) {
 			m.(*contentv1.Comment).PublishedAt.At = timestamppb.New(time.Date(2026, 11, 3, 9, 0, 0, 0, time.UTC))
 		}},
+		{"keyword ID not in KeywordID's form", "candidate.yt-to-fb.json", "not contracts.KeywordID's form", func(m proto.Message) {
+			c := m.(*discoveryv1.Candidate)
+			c.Evidence = append(c.Evidence, &discoveryv1.Evidence{KeywordId: "Baghdad"})
+		}},
+		{"evidence time estimate not at Iraq midnight", "candidate.yt-to-fb.json", "isn't 00:00 Iraq time", func(m proto.Message) {
+			c := m.(*discoveryv1.Candidate)
+			c.Evidence = append(c.Evidence, &discoveryv1.Evidence{ContentTime: &contentv1.Time{
+				At: timestamppb.New(time.Date(2026, 11, 3, 9, 0, 0, 0, time.UTC)), Precision: contentv1.TimePrecision_TIME_PRECISION_DAY,
+			}})
+		}},
 		{"hour estimate not at the hour", "comment.yt.json", "start of an hour", func(m proto.Message) {
 			c := m.(*contentv1.Comment)
 			c.PublishedAt.Precision = contentv1.TimePrecision_TIME_PRECISION_HOUR
@@ -163,5 +174,20 @@ func TestCapAllowedOutsideProduction(t *testing.T) {
 	m.(*discoveryv1.Candidate).Outcome = discoveryv1.Outcome_OUTCOME_CAPPED
 	if err := fn(m, Options{Production: false}); err != nil {
 		t.Fatalf("tests and the canary should allow CAPPED: %v", err)
+	}
+}
+
+// A collector's canary runs in production and may cap discovery (D-012).
+func TestCapAllowedInACanary(t *testing.T) {
+	m, fn := load(t, "../samples/candidate.yt-to-fb.json")
+	c := m.(*discoveryv1.Candidate)
+	c.Outcome = discoveryv1.Outcome_OUTCOME_CAPPED
+	c.Source = discoveryv1.Source_SOURCE_LOCATION_PAGE
+	c.Evidence = append(c.Evidence, &discoveryv1.Evidence{
+		KeywordId:   contracts.KeywordID("baghdad", "ar", "بَغْدَاد"),
+		ContentTime: &contentv1.Time{At: timestamppb.New(time.Date(2026, 11, 2, 21, 0, 0, 0, time.UTC)), Precision: contentv1.TimePrecision_TIME_PRECISION_DAY},
+	})
+	if err := fn(m, Options{Production: true, Canary: true}); err != nil {
+		t.Fatalf("a canary should allow CAPPED: %v", err)
 	}
 }
