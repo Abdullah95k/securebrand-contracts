@@ -1,4 +1,4 @@
-# Field matrix (6 November 2026, draft v0.2)
+# Field matrix (6 November 2026, v1.0.0)
 
 Every unified field of the contract ([`../README.md`](../README.md)), against what each collector gets today. Built from:
 - the field inventories of fbs, igs, tks and yts (in the platform's private repository);

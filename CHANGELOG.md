@@ -2,6 +2,10 @@
 
 All notable changes to the contract. Fields are only ever added; a breaking change is a new major version.
 
+## v1.0.0, 6 November 2026
+
+Approved by the owner (decision D-016). The content of draft v0.2, unchanged, plus `contracts.Version` (`"1.0.0"`), the value collectors put in the `sb-contract` header. From here on, fields are only added; CI checks every change against this tag.
+
 ## v0.2.0 (draft), 6 November 2026
 
 The changes from every session's review of v0.1 (REQ-012 to REQ-016: analysis, fbs, igs, tks, yts) and the owner's decisions D-013 to D-015. Nothing is registered yet; the owner approves the result as v1.0.0.

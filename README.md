@@ -1,6 +1,6 @@
-# The SecureBrand unified contract (draft v0.2)
+# The SecureBrand unified contract (v1.0.0)
 
-**Status:** draft v0.2, 6 November 2026 (Iraq time). Every service reviewed its mapping to v0.1 (REQ-012 to REQ-016), and v0.2 takes in those reviews ([`CHANGELOG.md`](CHANGELOG.md)). The owner approves **v1.0.0**. Until v1.0.0 is tagged, **nothing is registered in any shared Schema Registry**.
+**Status:** **v1.0.0**, approved by the owner on 6 November 2026 (Iraq time), decision D-016. It is draft v0.2 unchanged: v0.1 plus every service's review of its own mapping (REQ-012 to REQ-016) and the owner's estimate rule ([`CHANGELOG.md`](CHANGELOG.md)). From now on fields are only added (section "The rules collectors follow"), and CI checks every change against the `v1.0.0` tag. The platform registers the subjects in its own Schema Registry when production is up; collectors never register shared subjects.
 
 ## What it is
 
@@ -132,7 +132,7 @@ Posts and comments are separate (the owner's decision), and counts are separate 
 
 ### 11. On the wire
 
-- **Plain Protobuf, one message type per topic,** with the headers `sb-type` (the full message name) and `sb-contract` (the contract version). That's what fbs, igs and tks already do; only the header name is unified.
+- **Plain Protobuf, one message type per topic,** with the headers `sb-type` (the full message name) and `sb-contract` (the contract version, `contracts.Version` in Go: `1.0.0`). That's what fbs, igs and tks already do; only the header name is unified.
 - **The platform registers each topic's subject** (`<topic>-value`, `BACKWARD_TRANSITIVE`) from the contract repository's CI. Collectors never register shared subjects.
 - **Keys keep the order that matters:** comments and metrics are keyed by their post, so a post's comments and counts stay in order. Every topic and its key is in `registry/topics.yaml`.
 - **Retention on Kafka is 7 days.** The permanent copy is ClickHouse plus the event archive in object storage.
@@ -189,7 +189,7 @@ Each collector session confirms its mapping, and the owner decides the points ma
 
 1. **Shared keyword list:** where it lives (a file in this repository, or a small platform service). The seed is fbs's `iraq.yaml`. **Owner**, with the master.
 2. **Instagram highlight items** are published only after one real read-only check shows logged-out Instagram serves them (igs).
-3. **v1.0.0:** the **owner** approves this draft as v1.0.0. Then the platform registers the subjects, and each service adopts it in its own request.
+3. **Adoption:** each service adopts v1.0.0 in its own request from the owner, and the platform registers the subjects once production is up.
 
 Closed in v0.2: `predicted_age_group` is normal data (D-015); Facebook `likes` is the reaction total (fbs agreed; the client app labels it "reactions" on Facebook); igs's account counts move to snapshots (igs agreed); official-API hits stay out of `content.*` (yts); bot detection keys on the author's account ID (analysis agreed).
 

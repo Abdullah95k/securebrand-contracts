@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: securebrand/content/v1/common.proto
 
-// securebrand.content.v1: the unified content contract (draft v0.2).
+// securebrand.content.v1: the unified content contract (v1).
 //
 // Every collector maps its platform data into these messages, and every
 // consumer (storage, analysis, alerts, the client app) reads only these.
